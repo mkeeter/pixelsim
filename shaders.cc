@@ -7,6 +7,7 @@
 
 GLuint Shaders::ship = 0;
 GLuint Shaders::texture = 0;
+GLuint Shaders::dilate = 0;
 
 void Shaders::init()
 {
@@ -14,6 +15,8 @@ void Shaders::init()
                          CompileShader("ship.frag"));
     texture = CreateProgram(CompileShader("texture.vert"),
                             CompileShader("texture.frag"));
+    texture = CreateProgram(CompileShader("texture.vert"),
+                            CompileShader("dilate.frag"));
 }
 
 GLuint Shaders::CompileShader(const std::string& filename)

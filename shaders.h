@@ -9,6 +9,7 @@ public:
     static void init();
     static GLuint ship;
     static GLuint texture;
+    static GLuint dilate;
 
 private:
     static GLuint CompileShader(const std::string& filename);

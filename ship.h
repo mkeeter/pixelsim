@@ -10,11 +10,14 @@ class Ship
 public:
     Ship(const std::string& imagename);
     ~Ship();
+    void Update();
     void Draw(const int window_width, const int window_height) const;
 private:
     void MakeBuffers();
     void LoadImage(const std::string& imagename);
     void MakeTextures();
+    void MakeFramebuffers();
+
     void SetTextureDefaults() const;
 
     size_t width;

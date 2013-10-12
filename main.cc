@@ -5,7 +5,6 @@
 
 #include "ship.h"
 #include "shaders.h"
-#include "extensions.h"
 
 struct WindowSize
 {
@@ -75,6 +74,10 @@ int main(int argc, char** argv)
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window))
     {
+        // Update the ship
+        ship.Update();
+
+        // Draw the scene
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         ship.Draw(window_size.width, window_size.height);

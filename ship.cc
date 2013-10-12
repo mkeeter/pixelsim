@@ -19,6 +19,7 @@ Ship::Ship(const std::string& imagename)
     LoadImage(imagename);
     MakeTextures();
     MakeBuffers();
+    MakeFramebuffers();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,9 +33,37 @@ Ship::~Ship()
 
     glDeleteTextures(1, &filled_tex);
     glDeleteTextures(1, &output_tex);
+
+    glDeleteFramebuffers(1, &fbo);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+void Ship::Update()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, output_tex, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    const GLuint program = Shaders::texture;
+    glUseProgram(program);
+    glViewport(0, 0, width, height);
+
+    glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
+    const GLint v = glGetAttribLocation(program, "vertex_position");
+    glEnableVertexAttribArray(v);
+    glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, filled_tex);
+    glUniform1i(glGetUniformLocation(program, "texture"), 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void Ship::Draw(const int window_width, const int window_height) const
@@ -74,9 +103,9 @@ void Ship::Draw(const int window_width, const int window_height) const
         glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, filled_tex);
+        glBindTexture(GL_TEXTURE_2D, output_tex);
         glUniform1i(glGetUniformLocation(program, "texture"), 0);
-        glDrawArrays(GL_TRIANGLES, 0, 12);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 
 }
@@ -175,7 +204,6 @@ void Ship::MakeBuffers()
     glBufferData(GL_ARRAY_BUFFER, 12*sizeof(rect[0]),
                  &rect[0], GL_STATIC_DRAW);
 
-    glGenFramebuffers(1, &fbo);
 }
 
 void Ship::MakeTextures()
@@ -194,15 +222,20 @@ void Ship::MakeTextures()
     }
 
     {
-        GLubyte* const empty = new GLubyte[width*height];
-        for (size_t i=0; i < width*height; ++i)     empty[i] = 0;
+        GLubyte* const empty = new GLubyte[width*height*4];
+        for (size_t i=0; i < width*height*4; ++i)     empty[i] = 0;
         glGenTextures(1, &output_tex);
         glBindTexture(GL_TEXTURE_2D, output_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, 1, width, height,
-                0, GL_RED, GL_UNSIGNED_BYTE, empty);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
+                0, GL_RGBA, GL_UNSIGNED_BYTE, empty);
         SetTextureDefaults();
         delete [] empty;
     }
+}
+
+void Ship::MakeFramebuffers()
+{
+    glGenFramebuffers(1, &fbo);
 }
 
 void Ship::SetTextureDefaults() const
