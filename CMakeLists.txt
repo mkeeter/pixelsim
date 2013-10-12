@@ -3,7 +3,7 @@ set(CMAKE_CXX_COMPILER "g++-4.8")
 project(pixelFEM)
 
 set(CMAKE_CXX_FLAGS "-Wall -g -std=c++11")
-set(SRCS main.cc ship.cc shaders.cc extensions.cc)
+set(SRCS main.cc ship.cc shaders.cc)
 add_executable(${CMAKE_PROJECT_NAME} ${SRCS})
 
 find_package(PkgConfig REQUIRED)
