@@ -15,8 +15,8 @@ void Shaders::init()
                          CompileShader("ship.frag"));
     texture = CreateProgram(CompileShader("texture.vert"),
                             CompileShader("texture.frag"));
-    texture = CreateProgram(CompileShader("texture.vert"),
-                            CompileShader("dilate.frag"));
+    dilate = CreateProgram(CompileShader("texture.vert"),
+                           CompileShader("dilate.frag"));
 }
 
 GLuint Shaders::CompileShader(const std::string& filename)

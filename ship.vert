@@ -15,14 +15,12 @@ uniform sampler2D filled;
 
 void main()
 {
-    color_out = vec3(0.0f);
+    color_out = color_in;
 
     float x = 0.0f, y = 0.0f;
     float count = 0.0f;
 
-//    for (int i=0; i < 4; ++i) {
-    int i=0;
-    {
+    for (int i=0; i < 4; ++i) {
         // Each vertex is shared by four pixels.  We'll look at
         // each pixel and find an average position for the vertex.
         float x0, y0;
@@ -44,16 +42,16 @@ void main()
 
         // Sample the position texture at the desired point to see if
         // there's a pixel there that we care about.
-        if (xy.x >= 0 && xy.x <= 1 && xy.y >= 0 && xy.y <= 1)
-            //&& texture2D(filled, xy).r != 0)
+        if (xy.x >= 0 && xy.x <= 1 && xy.y >= 0 && xy.y <= 1 &&
+            texture2D(filled, xy).r != 0)
         {
             // Get position and rotation data from the texture
             vec4 T = texture2D(pos, xy);
 
             // Normalize the position coordinate
-            //x0 += 10*(T.r - 0.5f);
-            //y0 += 10*(T.g - 0.5f);
-            float a0 = i*M_PI/2.0f + M_PI/4.0f + 0.4;//T.b*2*M_PI;
+            x0 += T.r;
+            y0 += T.g;
+            float a0 = i*M_PI/2.0f + M_PI/4.0f + T.b;
 
             // Acumulate an average position
             x += x0 + sqrt(0.5f)*cos(a0);
@@ -65,14 +63,6 @@ void main()
     // Normalize the averaged values
     x /= count;
     y /= count;
-
-    //if (count == 1) color_out = vec3(1.0f);
-    //if (count == 0) color_out = vec3(0.0f);
-    color_out = color_in;
-
-    x = vertex_position.x;
-    y = vertex_position.y;
-    if (y < 0)  y = 0;
 
     vec2 centered = vec2(x - (ship_size.x - 1)/2.0f,
                          y - (ship_size.y - 1)/2.0f);

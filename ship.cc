@@ -71,7 +71,8 @@ void Ship::Update()
 
 void Ship::Draw(const int window_width, const int window_height) const
 {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#if 1
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     const GLuint program = Shaders::ship;
     glUseProgram(program);
@@ -101,23 +102,21 @@ void Ship::Draw(const int window_width, const int window_height) const
     glUniform1i(glGetUniformLocation(program, "filled"), 1);
 
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
+#endif
 
 #if 0
-    {
-        glViewport(0, 0, width, height);
-        const GLuint program = Shaders::texture;
-        glUseProgram(program);
+    const GLuint program = Shaders::texture;
+    glUseProgram(program);
 
-        glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
-        const GLint v = glGetAttribLocation(program, "vertex_position");
-        glEnableVertexAttribArray(v);
-        glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
+    const GLint v = glGetAttribLocation(program, "vertex_position");
+    glEnableVertexAttribArray(v);
+    glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, output_tex);
-        glUniform1i(glGetUniformLocation(program, "texture"), 0);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    }
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, filled_tex);
+    glUniform1i(glGetUniformLocation(program, "texture"), 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 #endif
 
 }
@@ -220,50 +219,41 @@ void Ship::MakeBuffers()
 
 void Ship::MakeTextures()
 {
-    {   // filled_tex is a one-byte texture recording occupancy
+    {   // Load a byte-map recording occupancy
+        // Bytes are byte-aligned, so set unpack alignment to 1
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         GLubyte* const filled = new GLubyte[width*height];
-        for (size_t i=0; i < width*height; ++i) {
-            filled[i] = data[i*4 + 3] ? 255 : 0;
+        size_t i=0;
+        for (size_t y=0; y < height; ++y) {
+            for (size_t x=0; x < width; ++x) {
+                filled[i++] = data[4*(width*(height-1-y) + x) + 3] ? 255 : 0;
+            }
         }
-        std::cout << std::endl;
         glGenTextures(1, &filled_tex);
         glBindTexture(GL_TEXTURE_2D, filled_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, 1, width, height,
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height,
                      0, GL_RED, GL_UNSIGNED_BYTE, filled);
         SetTextureDefaults();
         delete [] filled;
     }
 
-    {
-        GLubyte* const pos = new GLubyte[width*height*3];
-        for (size_t i=0; i < width*height; ++i)
-        {
-            pos[3*i]   = 128;
-            pos[3*i+1] = 128;
-            pos[3*i+2] = 0;
-        }
-        glGenTextures(1, &pos_tex);
-        glBindTexture(GL_TEXTURE_2D, pos_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
-                0, GL_RGB, GL_UNSIGNED_BYTE, pos);
-        SetTextureDefaults();
-        delete [] pos;
-    }
+    {   // Make a set of float textures storing position, velocity,
+        // and acceleration.
 
-    {
-        GLubyte* const empty = new GLubyte[width*height*3];
+        // Floats are 4-byte-aligned.
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        GLfloat* const empty = new GLfloat[width*height*3];
         for (size_t i=0; i < width*height*3; i++)   empty[i] = 0;
-        glGenTextures(1, &vel_tex);
-        glBindTexture(GL_TEXTURE_2D, vel_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
-                     0, GL_RGB, GL_UNSIGNED_BYTE, empty);
-        SetTextureDefaults();
 
-        glGenTextures(1, &accel_tex);
-        glBindTexture(GL_TEXTURE_2D, accel_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
-                     0, GL_RGB, GL_UNSIGNED_BYTE, empty);
-        SetTextureDefaults();
+        GLuint* textures[] = {&pos_tex, &vel_tex, &accel_tex};
+
+        for (auto t: textures) {
+            glGenTextures(1, t);
+            glBindTexture(GL_TEXTURE_2D, pos_tex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F_ARB, width, height,
+                    0, GL_RGB, GL_FLOAT, empty);
+            SetTextureDefaults();
+        }
         delete [] empty;
     }
 }

@@ -52,12 +52,18 @@ int main(int argc, char** argv)
     // Make the window's context current
     glfwMakeContextCurrent(window);
 
-    // Make sure that GL_EXT_framebuffer_object is supported
-    if (!glfwExtensionSupported("GL_ARB_framebuffer_object"))
-    {
-        std::cerr << "GL_EXT_framebuffer_object not supported!" << std::endl;
-        glfwTerminate();
-        return -1;
+    // Make sure that all of the extensions we need are supported
+    std::string extensions[] = {
+        "GL_ARB_framebuffer_object",
+        "GL_ARB_texture_rg", // Used for GL_R8 internal texture format
+        "GL_ARB_texture_float"};
+    for (auto s : extensions) {
+        if (!glfwExtensionSupported(s.c_str()))
+        {
+            std::cerr << "GL_ARB_framebuffer_object not supported!" << std::endl;
+            glfwTerminate();
+            return -1;
+        }
     }
 
     // Use a callback to update glViewport when the window is resized
