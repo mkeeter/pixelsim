@@ -32,7 +32,9 @@ Ship::~Ship()
     glDeleteBuffers(1, &rect_buf);
 
     glDeleteTextures(1, &filled_tex);
-    glDeleteTextures(1, &output_tex);
+    glDeleteTextures(1, &pos_tex);
+    glDeleteTextures(1, &vel_tex);
+    glDeleteTextures(1, &accel_tex);
 
     glDeleteFramebuffers(1, &fbo);
 }
@@ -41,6 +43,7 @@ Ship::~Ship()
 
 void Ship::Update()
 {
+#if 0
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                            GL_TEXTURE_2D, output_tex, 0);
@@ -61,38 +64,46 @@ void Ship::Update()
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Ship::Draw(const int window_width, const int window_height) const
 {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    if (0) {
-        const GLuint program = Shaders::ship;
-        glUseProgram(program);
+    const GLuint program = Shaders::ship;
+    glUseProgram(program);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buf);
-        const GLint v = glGetAttribLocation(program, "vertex_position");
-        glEnableVertexAttribArray(v);
-        glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buf);
+    const GLint v = glGetAttribLocation(program, "vertex_position");
+    glEnableVertexAttribArray(v);
+    glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, color_buf);
-        const GLint c = glGetAttribLocation(program, "color_in");
-        glEnableVertexAttribArray(c);
-        glVertexAttribPointer(c, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3*sizeof(GLbyte), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, color_buf);
+    const GLint c = glGetAttribLocation(program, "color_in");
+    glEnableVertexAttribArray(c);
+    glVertexAttribPointer(c, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3*sizeof(GLbyte), 0);
 
-        const GLint w = glGetUniformLocation(program, "window_size");
-        glUniform2i(w, window_width, window_height);
+    const GLint w = glGetUniformLocation(program, "window_size");
+    glUniform2i(w, window_width, window_height);
 
-        const GLint s = glGetUniformLocation(program, "ship_size");
-        glUniform2i(s, width, height);
+    const GLint s = glGetUniformLocation(program, "ship_size");
+    glUniform2i(s, width, height);
 
-        glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
-    }
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, pos_tex);
+    glUniform1i(glGetUniformLocation(program, "pos"), 0);
 
-    if (1) {
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, filled_tex);
+    glUniform1i(glGetUniformLocation(program, "filled"), 1);
+
+    glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
+
+#if 0
+    {
         glViewport(0, 0, width, height);
         const GLuint program = Shaders::texture;
         glUseProgram(program);
@@ -107,6 +118,7 @@ void Ship::Draw(const int window_width, const int window_height) const
         glUniform1i(glGetUniformLocation(program, "texture"), 0);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
+#endif
 
 }
 
@@ -150,23 +162,23 @@ void Ship::MakeBuffers()
             if (data[y*width*4 + x*4 + 3]) {
                 // First triangle
                 vertices.push_back(x-0.5);
-                vertices.push_back(y-0.5);
+                vertices.push_back(height-y-1.5);
 
                 vertices.push_back(x+0.5);
-                vertices.push_back(y-0.5);
+                vertices.push_back(height-y-1.5);
 
                 vertices.push_back(x+0.5);
-                vertices.push_back(y+0.5);
+                vertices.push_back(height-y-0.5);
 
                 // Second triangle
                 vertices.push_back(x+0.5);
-                vertices.push_back(y+0.5);
+                vertices.push_back(height-y-0.5);
 
                 vertices.push_back(x-0.5);
-                vertices.push_back(y+0.5);
+                vertices.push_back(height-y-0.5);
 
                 vertices.push_back(x-0.5);
-                vertices.push_back(y-0.5);
+                vertices.push_back(height-y-1.5);
 
                 // Every vertex gets a color and initial position
                 for (int v=0; v < 6; ++v) {
@@ -208,11 +220,12 @@ void Ship::MakeBuffers()
 
 void Ship::MakeTextures()
 {
-    {
+    {   // filled_tex is a one-byte texture recording occupancy
         GLubyte* const filled = new GLubyte[width*height];
         for (size_t i=0; i < width*height; ++i) {
             filled[i] = data[i*4 + 3] ? 255 : 0;
         }
+        std::cout << std::endl;
         glGenTextures(1, &filled_tex);
         glBindTexture(GL_TEXTURE_2D, filled_tex);
         glTexImage2D(GL_TEXTURE_2D, 0, 1, width, height,
@@ -222,12 +235,34 @@ void Ship::MakeTextures()
     }
 
     {
-        GLubyte* const empty = new GLubyte[width*height*4];
-        for (size_t i=0; i < width*height*4; ++i)     empty[i] = 0;
-        glGenTextures(1, &output_tex);
-        glBindTexture(GL_TEXTURE_2D, output_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
-                0, GL_RGBA, GL_UNSIGNED_BYTE, empty);
+        GLubyte* const pos = new GLubyte[width*height*3];
+        for (size_t i=0; i < width*height; ++i)
+        {
+            pos[3*i]   = 128;
+            pos[3*i+1] = 128;
+            pos[3*i+2] = 0;
+        }
+        glGenTextures(1, &pos_tex);
+        glBindTexture(GL_TEXTURE_2D, pos_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
+                0, GL_RGB, GL_UNSIGNED_BYTE, pos);
+        SetTextureDefaults();
+        delete [] pos;
+    }
+
+    {
+        GLubyte* const empty = new GLubyte[width*height*3];
+        for (size_t i=0; i < width*height*3; i++)   empty[i] = 0;
+        glGenTextures(1, &vel_tex);
+        glBindTexture(GL_TEXTURE_2D, vel_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
+                     0, GL_RGB, GL_UNSIGNED_BYTE, empty);
+        SetTextureDefaults();
+
+        glGenTextures(1, &accel_tex);
+        glBindTexture(GL_TEXTURE_2D, accel_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height,
+                     0, GL_RGB, GL_UNSIGNED_BYTE, empty);
         SetTextureDefaults();
         delete [] empty;
     }

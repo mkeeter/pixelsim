@@ -33,8 +33,12 @@ private:
     GLuint rect_buf;
 
     // Textures
-    GLuint filled_tex;
-    GLuint output_tex;
+    GLuint filled_tex;  // boolean storing occupancy
+
+    GLuint pos_tex;     // position & rotation of each pixel
+    GLuint vel_tex;     // velocity of each pixel
+
+    GLuint accel_tex;   // acceleration of each pixel
 
     // Frame-buffer object
     GLuint fbo;

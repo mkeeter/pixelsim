@@ -1,5 +1,7 @@
 #version 120
 
+#define M_PI 3.14159265
+
 attribute vec2  vertex_position;
 
 attribute vec3  color_in;
@@ -8,11 +10,72 @@ varying   vec3  color_out;
 uniform  ivec2  window_size;
 uniform  ivec2  ship_size;
 
+uniform sampler2D pos;
+uniform sampler2D filled;
+
 void main()
 {
-    vec2 centered = vec2(vertex_position.x - (ship_size.x - 1)/2.0f,
-                         (ship_size.y - 1)/2.0f - vertex_position.y);
+    color_out = vec3(0.0f);
 
+    float x = 0.0f, y = 0.0f;
+    float count = 0.0f;
+
+//    for (int i=0; i < 4; ++i) {
+    int i=0;
+    {
+        // Each vertex is shared by four pixels.  We'll look at
+        // each pixel and find an average position for the vertex.
+        float x0, y0;
+        if (i == 1 || i == 2) {
+            x0 = ceil(vertex_position.x);
+        } else {
+            x0 = floor(vertex_position.x);
+        }
+
+        if (i < 2) {
+            y0 = floor(vertex_position.y);
+        } else {
+            y0 = ceil(vertex_position.y);
+        }
+
+        // Texture sampling position
+        vec2 xy = vec2((2.0f*x0 + 1.0f) / float(2.0f*ship_size.x),
+                       (2.0f*y0 + 1.0f) / float(2.0f*ship_size.y));
+
+        // Sample the position texture at the desired point to see if
+        // there's a pixel there that we care about.
+        if (xy.x >= 0 && xy.x <= 1 && xy.y >= 0 && xy.y <= 1)
+            //&& texture2D(filled, xy).r != 0)
+        {
+            // Get position and rotation data from the texture
+            vec4 T = texture2D(pos, xy);
+
+            // Normalize the position coordinate
+            //x0 += 10*(T.r - 0.5f);
+            //y0 += 10*(T.g - 0.5f);
+            float a0 = i*M_PI/2.0f + M_PI/4.0f + 0.4;//T.b*2*M_PI;
+
+            // Acumulate an average position
+            x += x0 + sqrt(0.5f)*cos(a0);
+            y += y0 + sqrt(0.5f)*sin(a0);
+
+            count++;
+        }
+    }
+    // Normalize the averaged values
+    x /= count;
+    y /= count;
+
+    //if (count == 1) color_out = vec3(1.0f);
+    //if (count == 0) color_out = vec3(0.0f);
+    color_out = color_in;
+
+    x = vertex_position.x;
+    y = vertex_position.y;
+    if (y < 0)  y = 0;
+
+    vec2 centered = vec2(x - (ship_size.x - 1)/2.0f,
+                         y - (ship_size.y - 1)/2.0f);
 
     // If the ship is wider than the window, fit the x axis
     if ((ship_size.x*window_size.y) / (ship_size.y*window_size.x) >= 1)
@@ -27,6 +90,4 @@ void main()
     }
 
     gl_Position = vec4(centered*0.9, 0.0, 1.0);
-
-    color_out = color_in;
 }
