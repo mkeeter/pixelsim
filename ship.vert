@@ -48,7 +48,6 @@ void main()
             // Get position and rotation data from the texture
             vec4 T = texture2D(pos, xy);
 
-            // Normalize the position coordinate
             x0 += T.r;
             y0 += T.g;
             float a0 = i*M_PI/2.0f + M_PI/4.0f + T.b;

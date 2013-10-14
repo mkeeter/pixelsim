@@ -10,6 +10,7 @@ public:
     static GLuint ship;
     static GLuint texture;
     static GLuint dilate;
+    static GLuint accel;
 
 private:
     static GLuint CompileShader(const std::string& filename);

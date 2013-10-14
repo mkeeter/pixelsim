@@ -43,35 +43,51 @@ Ship::~Ship()
 
 void Ship::Update()
 {
-#if 0
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, output_tex, 0);
+                           GL_TEXTURE_2D, accel_tex, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    const GLuint program = Shaders::texture;
+    const GLuint program = Shaders::accel;
     glUseProgram(program);
     glViewport(0, 0, width, height);
 
+    // Load a rectangle from -1, -1, to 1, 1
     glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
     const GLint v = glGetAttribLocation(program, "vertex_position");
     glEnableVertexAttribArray(v);
     glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 
+    // Load boolean occupancy texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, filled_tex);
-    glUniform1i(glGetUniformLocation(program, "texture"), 0);
+    glUniform1i(glGetUniformLocation(program, "filled"), 0);
+
+    // Load RGB32F position texture
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, pos_tex);
+    glUniform1i(glGetUniformLocation(program, "pos"), 1);
+
+    // Load various uniform values
+    glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
+    glUniform1f(glGetUniformLocation(program, "dt"), 1.0f);
+    glUniform1f(glGetUniformLocation(program, "k"), 1.0f);
+    glUniform1f(glGetUniformLocation(program, "theta"), 0.1f);
+
+    // Draw the full rectangle
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
+    // Switch back to the normal rendering framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Ship::Draw(const int window_width, const int window_height) const
 {
-#if 1
+    glViewport(0, 0, window_width, window_height);
+
+#if 0
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     const GLuint program = Shaders::ship;
@@ -104,7 +120,7 @@ void Ship::Draw(const int window_width, const int window_height) const
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
 #endif
 
-#if 0
+#if 1
     const GLuint program = Shaders::texture;
     glUseProgram(program);
 
@@ -114,7 +130,7 @@ void Ship::Draw(const int window_width, const int window_height) const
     glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, filled_tex);
+    glBindTexture(GL_TEXTURE_2D, accel_tex);
     glUniform1i(glGetUniformLocation(program, "texture"), 0);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 #endif
@@ -244,12 +260,13 @@ void Ship::MakeTextures()
         glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
         GLfloat* const empty = new GLfloat[width*height*3];
         for (size_t i=0; i < width*height*3; i++)   empty[i] = 0;
-
+        empty[0] = 0.2f;
+        empty[1] = 0.2f;
         GLuint* textures[] = {&pos_tex, &vel_tex, &accel_tex};
 
         for (auto t: textures) {
             glGenTextures(1, t);
-            glBindTexture(GL_TEXTURE_2D, pos_tex);
+            glBindTexture(GL_TEXTURE_2D, *t);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F_ARB, width, height,
                     0, GL_RGB, GL_FLOAT, empty);
             SetTextureDefaults();
