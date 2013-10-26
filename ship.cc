@@ -62,8 +62,8 @@ void Ship::UpdateAcceleration()
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
     glUniform1f(glGetUniformLocation(program, "k_linear"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "k_torsional"), 0.1f);
-    glUniform1f(glGetUniformLocation(program, "c_linear"), 0.1f);
-    glUniform1f(glGetUniformLocation(program, "c_torsional"), 0.1f);
+    glUniform1f(glGetUniformLocation(program, "c_linear"), 0.0f);
+    glUniform1f(glGetUniformLocation(program, "c_torsional"), 0.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
 
@@ -154,8 +154,8 @@ void Ship::DrawRect(const GLuint program)
 void Ship::Update()
 {
     UpdateAcceleration();
-    UpdatePosition(0.1f);
-    UpdateVelocity(0.1f);
+    UpdatePosition(0.01f);
+    UpdateVelocity(0.01f);
     tick = !tick;   // switch buffers
 }
 
@@ -341,8 +341,8 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                pos[i++] = x + ((rand() % 100) - 50) / 100.;
-                pos[i++] = y + ((rand() % 100) - 50) / 100.;
+                pos[i++] = x; // + (x == 0 && y == 0 ? -0.5 : 0);
+                pos[i++] = y + (y == 0 && x == 0 ? -0.5 : 0);
                 pos[i++] = 0;
             }
         }

@@ -38,7 +38,7 @@ vec3 accel(vec3 near, vec3 delta, vec3 far)
     // Find the force from the far point's angular spring torquing
     // being exerted on the near point.
 
-    {
+    if (false) {
         float angle = atan(d.y, d.x);
 
         // Find the angle between our desired beam and the actual beam, from
@@ -57,14 +57,14 @@ vec3 accel(vec3 near, vec3 delta, vec3 far)
     force /= m;
 
     // Torque due to the near point's angular spring
-    {
+    if (true) {
         // Desired angle from the perspective of the near point
         float d_angle = atan(-d.y, -d.x) - (atan(delta.y, delta.x) + near.z);
         while (d_angle < -M_PI)    d_angle += 2*M_PI;
         while (d_angle >  M_PI)    d_angle -= 2*M_PI;
 
         force.z = d_angle * k_torsional / I;
-    }
+    } else { force.z = 0; }
 
     return force;
 }
