@@ -47,14 +47,11 @@ void main()
         {
             // Get position and rotation data from the texture
             vec4 T = texture2D(pos, xy);
-
-            x0 += T.r;
-            y0 += T.g;
             float a0 = i*M_PI/2.0f + M_PI/4.0f + T.b;
 
             // Acumulate an average position
-            x += x0 + sqrt(0.5f)*cos(a0);
-            y += y0 + sqrt(0.5f)*sin(a0);
+            x += T.r + sqrt(0.5f)*cos(a0);
+            y += T.g + sqrt(0.5f)*sin(a0);
 
             count++;
         }

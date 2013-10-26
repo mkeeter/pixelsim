@@ -20,6 +20,11 @@ private:
 
     void SetTextureDefaults() const;
 
+    void UpdateAcceleration();
+    void UpdateVelocity(const float dt);
+    void UpdatePosition(const float dt);
+    void DrawRect(const GLuint program);
+
     size_t width;
     size_t height;
     uint8_t* data;
@@ -35,10 +40,12 @@ private:
     // Textures
     GLuint filled_tex;  // boolean storing occupancy
 
-    GLuint pos_tex;     // position & rotation of each pixel
-    GLuint vel_tex;     // velocity of each pixel
+    GLuint pos_tex[2];     // position & rotation of each pixel
+    GLuint vel_tex[2];     // velocity of each pixel
 
     GLuint accel_tex;   // acceleration of each pixel
+
+    bool tick;
 
     // Frame-buffer object
     GLuint fbo;

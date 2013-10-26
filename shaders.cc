@@ -8,7 +8,9 @@
 GLuint Shaders::ship = 0;
 GLuint Shaders::texture = 0;
 GLuint Shaders::dilate = 0;
-GLuint Shaders::accel = 0;
+GLuint Shaders::acceleration = 0;
+GLuint Shaders::position = 0;
+GLuint Shaders::velocity = 0;
 
 void Shaders::init()
 {
@@ -18,8 +20,12 @@ void Shaders::init()
                             CompileShader("texture.frag"));
     dilate = CreateProgram(CompileShader("texture.vert"),
                            CompileShader("dilate.frag"));
-    accel = CreateProgram(CompileShader("texture.vert"),
-                          CompileShader("accel.frag"));
+    acceleration = CreateProgram(CompileShader("texture.vert"),
+                          CompileShader("acceleration.frag"));
+    position = CreateProgram(CompileShader("texture.vert"),
+                          CompileShader("position.frag"));
+    velocity = CreateProgram(CompileShader("texture.vert"),
+                          CompileShader("velocity.frag"));
 }
 
 GLuint Shaders::CompileShader(const std::string& filename)

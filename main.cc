@@ -32,6 +32,7 @@ int main(int argc, char** argv)
 
     // Initialize the library
     if (!glfwInit())    return -1;
+    glfwWindowHint(GLFW_SAMPLES, 8);    // multisampling!
 
     // Create a windowed mode window and its OpenGL context
     GLFWwindow* const window = glfwCreateWindow(
