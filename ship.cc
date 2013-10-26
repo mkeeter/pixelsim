@@ -341,8 +341,8 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                pos[i++] = x;
-                pos[i++] = y;
+                pos[i++] = x + ((rand() % 100) - 50) / 100.;
+                pos[i++] = y + ((rand() % 100) - 50) / 100.;
                 pos[i++] = 0;
             }
         }
