@@ -54,7 +54,7 @@ vec3 accel(vec3 near, vec2 delta, vec3 far)
 
         // Force from torsional spring at far point:
         // direction vector * (angle * k * lever arm length)
-        force.xy += force_direction * (d_angle * k_torsional * length(d.xy));
+        force.xy += force_direction * (-d_angle * k_torsional * length(d.xy));
     }
     force /= m;
 

@@ -33,7 +33,8 @@ Ship::~Ship()
     glDeleteBuffers(1, &rect_buf);
 
     GLuint* textures[] = {&filled_tex, &pos_tex[0], &pos_tex[1],
-                          &vel_tex[1], &vel_tex[0], &accel_tex};
+                          &vel_tex[1], &vel_tex[0], &accel_tex[0],
+                          &accel_tex[1], &accel_tex[2], &accel_tex[3]};
     for (auto t : textures)     glDeleteTextures(1, t);
 
     glDeleteFramebuffers(1, &fbo);
@@ -41,7 +42,13 @@ Ship::~Ship()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Ship::UpdateAcceleration()
+void Ship::GetDerivatives(const int source, const int out)
+{
+    GetAcceleration(source, out);
+    GetVelocity(source, out);
+}
+
+void Ship::GetAcceleration(const int source, const int accel_out)
 {
     const GLuint program = Shaders::acceleration;
     glUseProgram(program);
@@ -53,10 +60,10 @@ void Ship::UpdateAcceleration()
 
     // Load RGB32F position and velocity textures
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
+    glBindTexture(GL_TEXTURE_2D, pos_tex[source]);
     glUniform1i(glGetUniformLocation(program, "pos"), 1);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, vel_tex[tick]);
+    glBindTexture(GL_TEXTURE_2D, vel_tex[source]);
     glUniform1i(glGetUniformLocation(program, "vel"), 2);
 
     // Load various uniform values
@@ -64,20 +71,35 @@ void Ship::UpdateAcceleration()
     glUniform1f(glGetUniformLocation(program, "k_linear"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "k_torsional"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "c_linear"), 0.0f);
-    glUniform1f(glGetUniformLocation(program, "c_torsional"), 0.0f);
+    glUniform1f(glGetUniformLocation(program, "c_torsional"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, accel_tex, 0);
-    DrawRect(program);
-
-    // Switch back to the normal rendering framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    RenderToFBO(program, dvel_tex[accel_out]);
 }
 
-void Ship::UpdateVelocity(const float dt)
+void Ship::GetVelocity(const int source, const int vel_out)
+{
+    const GLuint program = Shaders::copy;
+    glUseProgram(program);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, vel_tex[source]);
+    glUniform1i(glGetUniformLocation(program, "texture"), 0);
+
+    RenderToFBO(program, dpos_tex[vel_out]);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Ship::ApplyDerivatives(const float dt, const int source)
+{
+    ApplyAcceleration(dt, source);
+    ApplyVelocity(dt, source);
+}
+
+void Ship::ApplyVelocity(const float dt, const int source)
 {
     const GLuint program = Shaders::velocity;
     glUseProgram(program);
@@ -89,23 +111,16 @@ void Ship::UpdateVelocity(const float dt)
 
     // Bind acceleration texture
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, accel_tex);
+    glBindTexture(GL_TEXTURE_2D, dvel_tex[source]);
     glUniform1i(glGetUniformLocation(program, "accel"), 1);
 
     // Set time-step value
     glUniform1f(glGetUniformLocation(program, "dt"), dt);
 
-    // Bind the framebuffer to the other velocity texture and render.
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, vel_tex[!tick], 0);
-    DrawRect(program);
-
-    // Switch back to the normal rendering framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    RenderToFBO(program, vel_tex[!tick]);
 }
 
-void Ship::UpdatePosition(const float dt)
+void Ship::ApplyVelocity(const float dt, const int source)
 {
     const GLuint program = Shaders::position;
     glUseProgram(program);
@@ -117,48 +132,33 @@ void Ship::UpdatePosition(const float dt)
 
     // Bind velocity texture
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, vel_tex[tick]);
+    glBindTexture(GL_TEXTURE_2D, dpos_tex[source]);
     glUniform1i(glGetUniformLocation(program, "vel"), 1);
 
     // Set time-step value
     glUniform1f(glGetUniformLocation(program, "dt"), dt);
 
-    // Bind the framebuffer to the other position texture and render.
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, pos_tex[!tick], 0);
-    DrawRect(program);
-
-    // Switch back to the normal rendering framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    RenderToFBO(program, pos_tex[!tick]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Ship::DrawRect(const GLuint program)
+void Ship::Update(const float dt)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0, 0, width, height);
+    GetDerivatives(tick, 0);    // k1 = f(y)
 
-    // Load a rectangle from -1, -1, to 1, 1
-    glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
-    const GLint v = glGetAttribLocation(program, "vertex_position");
-    glEnableVertexAttribArray(v);
-    glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
+    ApplyDerivatives(dt/2, 0);  // Calculate y + dt/2 * k1
+    GetDerivatives(!tick, 1);   // k2 = f(y + dt/2 * k1)
 
-    // Draw the full rectangle into the FBO, which is bound to accel_tex
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-}
+    ApplyDerivatives(dt/2, 1);  // Calculate y + dt/2 * k2
+    GetDerivatives(!tick, 2);   // k3 = f(y + dt/2 * k2)
 
+    ApplyDerivatives(dt, 2);    // Calculate y + dt * k3
+    GetDerivatives(!tick, 3);   // k4 = f(y + dt * k3)
 
-
-void Ship::Update()
-{
-    UpdateAcceleration();
-    UpdatePosition(0.01f);
-    UpdateVelocity(0.01f);
     tick = !tick;   // switch buffers
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -166,7 +166,6 @@ void Ship::Draw(const int window_width, const int window_height) const
 {
     glViewport(0, 0, window_width, window_height);
 
-#if 1
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     const GLuint program = Shaders::ship;
@@ -197,23 +196,31 @@ void Ship::Draw(const int window_width, const int window_height) const
     glUniform1i(glGetUniformLocation(program, "filled"), 1);
 
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
-#endif
+}
 
-#if 0
-    const GLuint program = Shaders::texture;
-    glUseProgram(program);
+////////////////////////////////////////////////////////////////////////////////
 
+void Ship::RenderToFBO(const GLuint program, const GLuint tex)
+{
+    // Bind the desired texture to the framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, tex, 0);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, width, height);
+
+    // Load triangles that draw a flat rectangle from -1, -1, to 1, 1
     glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
     const GLint v = glGetAttribLocation(program, "vertex_position");
     glEnableVertexAttribArray(v);
     glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, accel_tex);
-    glUniform1i(glGetUniformLocation(program, "texture"), 0);
+    // Draw the full rectangle into the FBO
     glDrawArrays(GL_TRIANGLES, 0, 6);
-#endif
 
+    // Switch back to the default framebuffer.
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -376,7 +383,9 @@ void Ship::MakeTextures()
         GLfloat* const empty = new GLfloat[width*height*3];
         for (size_t i=0; i < width*height*3; i++)   empty[i] = 0;
 
-        GLuint* textures[] = {&vel_tex[0], &vel_tex[1], &accel_tex};
+        GLuint* textures[] = {&vel_tex[0], &vel_tex[1],
+                              &accel_tex[0], &accel_tex[1],
+                              &accel_tex[2], &accel_tex[3]};
 
         for (auto t: textures) {
             glGenTextures(1, t);

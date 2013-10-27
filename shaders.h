@@ -9,11 +9,10 @@ public:
     static void init();
 
     static GLuint ship;
-    static GLuint texture;
-    static GLuint dilate;
     static GLuint acceleration;
     static GLuint velocity;
     static GLuint position;
+    static GLuint copy;
 
 private:
     static GLuint CompileShader(const std::string& filename);

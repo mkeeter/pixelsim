@@ -20,10 +20,28 @@ private:
 
     void SetTextureDefaults() const;
 
-    void UpdateAcceleration();
-    void UpdateVelocity(const float dt);
-    void UpdatePosition(const float dt);
-    void DrawRect(const GLuint program);
+    // From pos[source] and vel[source], calculate and store derivatives
+    void GetDerivatives(const int source, const int out);
+
+    // From pos[source] and vel[tick], calculate dvel and store in
+    // dvel[accel_out]
+    void GetAcceleration(const int source, const int accel_out);
+
+    // From vel[source], calculate dpos (hint: it's the same thing)
+    // and store in dpos[vel_out]
+    void GetVelocity(const int source, const int vel_out);
+
+    // Applies derivatives in the given slot, storing new position
+    // and velocity in tock slot.
+    void ApplyDerivatives(const float dt, const int source);
+
+    // Store an updated velocity in vel_tex[tock]
+    void ApplyAcceleration(const float dt, const int source);
+
+    // Store an updated position in pos_tex[tock]
+    void ApplyVelocity(const float dt, const int source);
+
+    void RenderToFBO(const GLuint program, const GLuint tex);
 
     size_t width;
     size_t height;
@@ -43,7 +61,8 @@ private:
     GLuint pos_tex[2];     // position & rotation of each pixel
     GLuint vel_tex[2];     // velocity of each pixel
 
-    GLuint accel_tex;   // acceleration of each pixel
+    GLuint dpos_tex[4];    // derivative of position (buffers for RK4)
+    GLuint dvel_tex[4];    // derivaties of velocity (buffers for RK4)
 
     bool tick;
 

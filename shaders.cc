@@ -6,26 +6,23 @@
 #include "shaders.h"
 
 GLuint Shaders::ship = 0;
-GLuint Shaders::texture = 0;
-GLuint Shaders::dilate = 0;
 GLuint Shaders::acceleration = 0;
 GLuint Shaders::position = 0;
 GLuint Shaders::velocity = 0;
+GLuint Shaders::copy = 0;
 
 void Shaders::init()
 {
     ship = CreateProgram(CompileShader("ship.vert"),
                          CompileShader("ship.frag"));
-    texture = CreateProgram(CompileShader("texture.vert"),
-                            CompileShader("texture.frag"));
-    dilate = CreateProgram(CompileShader("texture.vert"),
-                           CompileShader("dilate.frag"));
     acceleration = CreateProgram(CompileShader("texture.vert"),
-                          CompileShader("acceleration.frag"));
+                         CompileShader("acceleration.frag"));
     position = CreateProgram(CompileShader("texture.vert"),
-                          CompileShader("position.frag"));
+                         CompileShader("position.frag"));
     velocity = CreateProgram(CompileShader("texture.vert"),
-                          CompileShader("velocity.frag"));
+                         CompileShader("velocity.frag"));
+    copy = CreateProgram(CompileShader("texture.vert"),
+                         CompileShader("copy.frag"));
 }
 
 GLuint Shaders::CompileShader(const std::string& filename)
