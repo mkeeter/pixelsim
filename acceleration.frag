@@ -26,19 +26,21 @@ uniform float I;    // point's inertia
 // near, far, and far_ are x,y,a coordinates.
 // far is the desired (0-force/torque) position of the far point, and far_ is
 // the actual position of the far point.
-vec3 accel(vec3 near, vec3 delta, vec3 far)
+vec3 accel(vec3 near, vec2 delta, vec3 far)
 {
+    // A pixel can't influence itself.
+    if (delta.x == 0.0f && delta.y == 0.0f)     return vec3(0.0f);
+
     // Vectors pointing from far to near
     vec3 d = near - far;
 
     // Start with the force contribution due to linear spring
-    float magnitude = k_linear * (length(delta) - length(d));
-    vec3 force = magnitude * normalize(d);
+    float magnitude = k_linear * (length(delta) - length(d.xy));
+    vec3 force = vec3(magnitude * normalize(d.xy), 0.0f);
 
     // Find the force from the far point's angular spring torquing
     // being exerted on the near point.
-
-    if (false) {
+    {
         float angle = atan(d.y, d.x);
 
         // Find the angle between our desired beam and the actual beam, from
@@ -47,24 +49,24 @@ vec3 accel(vec3 near, vec3 delta, vec3 far)
         while (d_angle < -M_PI)    d_angle += 2*M_PI;
         while (d_angle >  M_PI)    d_angle -= 2*M_PI;
 
-        vec3 force_direction = vec3(cos(angle + M_PI/2),
-                                    sin(angle + M_PI/2), 0);
+        vec2 force_direction = vec2(cos(angle + M_PI/2),
+                                    sin(angle + M_PI/2));
 
         // Force from torsional spring at far point:
         // direction vector * (angle * k * lever arm length)
-        force += force_direction * (d_angle * k_torsional * length(d));
+        force.xy += force_direction * (d_angle * k_torsional * length(d.xy));
     }
     force /= m;
 
     // Torque due to the near point's angular spring
-    if (true) {
+    {
         // Desired angle from the perspective of the near point
         float d_angle = atan(-d.y, -d.x) - (atan(delta.y, delta.x) + near.z);
         while (d_angle < -M_PI)    d_angle += 2*M_PI;
         while (d_angle >  M_PI)    d_angle -= 2*M_PI;
 
-        force.z = d_angle * k_torsional / I;
-    } else { force.z = 0; }
+        force.z += d_angle * k_torsional / I;
+    }
 
     return force;
 }
@@ -79,7 +81,7 @@ void main()
         for (int dy=-1; dy <= 1; ++dy) {
             // Pick an offset that will give us the next pixel
             // in the desired direction.
-            vec3 delta = vec3(dx, dy, 0);
+            vec2 delta = vec2(dx, dy);
             float tex_dx = float(dx) / float(ship_size.x);
             float tex_dy = float(dy) / float(ship_size.y);
             vec2 tex_delta = vec2(tex_dx, tex_dy);
