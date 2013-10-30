@@ -1,4 +1,6 @@
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 #include <GLFW/glfw3.h>
 #include <OpenGL/glext.h>
@@ -6,12 +8,15 @@
 #include "ship.h"
 #include "shaders.h"
 
+////////////////////////////////////////////////////////////////////////////////
+
 struct WindowSize
 {
     WindowSize(int w, int h) : width(w), height(h) {}
     int width, height;
 };
 
+////////////////////////////////////////////////////////////////////////////////
 
 void window_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -22,6 +27,27 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
     glViewport(0, 0, width, height);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool check_extensions()
+{
+    // Make sure that all of the extensions we need are supported
+    std::string extensions[] = {
+        "GL_ARB_framebuffer_object",
+        "GL_ARB_texture_rg", // Used for GL_R8 internal texture format
+        "GL_ARB_texture_float"};
+    for (auto s : extensions) {
+        if (!glfwExtensionSupported(s.c_str()))
+        {
+            std::cerr << s << " not supported!" << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)
 {
@@ -45,34 +71,21 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    // Add a pointer to a struct that will be updated in the
-    // resize callback.
-    WindowSize window_size(640, 480);
-    glfwSetWindowUserPointer(window, static_cast<void*>(&window_size));
-
     // Make the window's context current
     glfwMakeContextCurrent(window);
 
-    // Make sure that all of the extensions we need are supported
-    std::string extensions[] = {
-        "GL_ARB_framebuffer_object",
-        "GL_ARB_texture_rg", // Used for GL_R8 internal texture format
-        "GL_ARB_texture_float"};
-    for (auto s : extensions) {
-        if (!glfwExtensionSupported(s.c_str()))
-        {
-            std::cerr << "GL_ARB_framebuffer_object not supported!" << std::endl;
-            glfwTerminate();
-            return -1;
-        }
+    // Check that all of the required extensions exist.
+    if (!check_extensions()) {
+        glfwTerminate();
+        return -1;
     }
 
-    // Use a callback to update glViewport when the window is resized
+    // Use a callback to update glViewport when the window is resized, by
+    // saving a pointer to a WindowSize struct in the window's user pointer
+    // field.
+    WindowSize window_size(640, 480);
+    glfwSetWindowUserPointer(window, static_cast<void*>(&window_size));
     glfwSetWindowSizeCallback(window, window_size_callback);
-
-    // Turn on vsync to limit framerate
-    // (no way this could backfire!)
-    glfwSwapInterval(1);
 
     // Initialize the ship!
     Ship ship(argv[1]);
@@ -81,6 +94,9 @@ int main(int argc, char** argv)
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window))
     {
+        // Store the start time of this update loop
+        const auto t0 = std::chrono::high_resolution_clock::now();
+
         // Update the ship
         ship.Update();
 
@@ -94,6 +110,16 @@ int main(int argc, char** argv)
 
         // Poll for and process events
         glfwPollEvents();
+
+        // Sleep to maintain a framerate of 60 FPS
+        std::this_thread::sleep_for(
+                std::chrono::microseconds(std::micro::den / 61) -
+                (std::chrono::high_resolution_clock::now() - t0));
+
+        // Print the FPS (for debugging)
+        std::cout << std::chrono::seconds(1) /
+                     (std::chrono::high_resolution_clock::now() - t0)
+                  << std::endl;
     }
 
     glfwTerminate();

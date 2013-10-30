@@ -13,6 +13,7 @@ public:
     static GLuint velocity;
     static GLuint position;
     static GLuint copy;
+    static GLuint RK4sum;
 
 private:
     static GLuint CompileShader(const std::string& filename);

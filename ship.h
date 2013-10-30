@@ -10,7 +10,7 @@ class Ship
 public:
     Ship(const std::string& imagename);
     ~Ship();
-    void Update();
+    void Update(const float dt=0.1);
     void Draw(const int window_width, const int window_height) const;
 private:
     void MakeBuffers();
@@ -40,6 +40,9 @@ private:
 
     // Store an updated position in pos_tex[tock]
     void ApplyVelocity(const float dt, const int source);
+
+    void GetNextState(const float dt);
+    void GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt);
 
     void RenderToFBO(const GLuint program, const GLuint tex);
 

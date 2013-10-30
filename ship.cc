@@ -32,9 +32,12 @@ Ship::~Ship()
     glDeleteBuffers(1, &color_buf);
     glDeleteBuffers(1, &rect_buf);
 
-    GLuint* textures[] = {&filled_tex, &pos_tex[0], &pos_tex[1],
-                          &vel_tex[1], &vel_tex[0], &accel_tex[0],
-                          &accel_tex[1], &accel_tex[2], &accel_tex[3]};
+    GLuint* textures[] = {
+        &filled_tex, &pos_tex[0],&pos_tex[1], &vel_tex[0], &vel_tex[1],
+        &dpos_tex[0], &dpos_tex[1], &dpos_tex[2], &dpos_tex[3],
+        &dvel_tex[0], &dvel_tex[1], &dvel_tex[2], &dvel_tex[3]
+    };
+
     for (auto t : textures)     glDeleteTextures(1, t);
 
     glDeleteFramebuffers(1, &fbo);
@@ -70,7 +73,7 @@ void Ship::GetAcceleration(const int source, const int accel_out)
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
     glUniform1f(glGetUniformLocation(program, "k_linear"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "k_torsional"), 1.0f);
-    glUniform1f(glGetUniformLocation(program, "c_linear"), 0.0f);
+    glUniform1f(glGetUniformLocation(program, "c_linear"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "c_torsional"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
@@ -99,7 +102,7 @@ void Ship::ApplyDerivatives(const float dt, const int source)
     ApplyVelocity(dt, source);
 }
 
-void Ship::ApplyVelocity(const float dt, const int source)
+void Ship::ApplyAcceleration(const float dt, const int source)
 {
     const GLuint program = Shaders::velocity;
     glUseProgram(program);
@@ -145,20 +148,63 @@ void Ship::ApplyVelocity(const float dt, const int source)
 
 void Ship::Update(const float dt)
 {
-    GetDerivatives(tick, 0);    // k1 = f(y)
+    const int steps = 5;
+    const float dt_ = dt / steps;
+    for (int i=0; i < steps; ++i) {
+        GetDerivatives(tick, 0);    // k1 = f(y)
 
-    ApplyDerivatives(dt/2, 0);  // Calculate y + dt/2 * k1
-    GetDerivatives(!tick, 1);   // k2 = f(y + dt/2 * k1)
+        ApplyDerivatives(dt_/2, 0);  // Calculate y + dt/2 * k1
+        GetDerivatives(!tick, 1);   // k2 = f(y + dt/2 * k1)
 
-    ApplyDerivatives(dt/2, 1);  // Calculate y + dt/2 * k2
-    GetDerivatives(!tick, 2);   // k3 = f(y + dt/2 * k2)
+        ApplyDerivatives(dt_/2, 1);  // Calculate y + dt/2 * k2
+        GetDerivatives(!tick, 2);   // k3 = f(y + dt/2 * k2)
 
-    ApplyDerivatives(dt, 2);    // Calculate y + dt * k3
-    GetDerivatives(!tick, 3);   // k4 = f(y + dt * k3)
+        ApplyDerivatives(dt_, 2);    // Calculate y + dt * k3
+        GetDerivatives(!tick, 3);   // k4 = f(y + dt * k3)
 
-    tick = !tick;   // switch buffers
+        // Update state and swap which texture is active
+        GetNextState(dt_);
+    }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+void Ship::GetNextState(const float dt)
+{
+    GetRK4Sum(pos_tex, dpos_tex, dt);
+    GetRK4Sum(vel_tex, dvel_tex, dt);
+    tick = !tick;
+}
+
+void Ship::GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt)
+{
+    const GLuint program = Shaders::RK4sum;
+    glUseProgram(program);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, state[tick]);
+    glUniform1i(glGetUniformLocation(program, "y"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, derivatives[0]);
+    glUniform1i(glGetUniformLocation(program, "k1"), 1);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, derivatives[1]);
+    glUniform1i(glGetUniformLocation(program, "k2"), 2);
+
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, derivatives[2]);
+    glUniform1i(glGetUniformLocation(program, "k3"), 3);
+
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, derivatives[3]);
+    glUniform1i(glGetUniformLocation(program, "k4"), 4);
+
+    glUniform1f(glGetUniformLocation(program, "dt"), dt);
+
+    RenderToFBO(program, state[!tick]);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -319,6 +365,8 @@ void Ship::MakeBuffers()
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void Ship::MakeTextures()
 {
     {   // Load a byte-map recording occupancy
@@ -349,8 +397,10 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                pos[i++] = x + (x == 0 && y == 0 ? -0.5 : 0);// + ((rand() % 100) - 50) / 100.;
-                pos[i++] = y + (x == 0 && y == 0 ? -0.5 : 0);// + ((rand() % 100) - 50) / 100.;
+//                pos[i++] = x + (x == 0 && y == 0 ? -0.5 : 0);// + ((rand() % 100) - 50) / 100.;
+//                pos[i++] = y + (x == 0 && y == 0 ? -0.5 : 0);// + ((rand() % 100) - 50) / 100.;
+                pos[i++] = x + ((rand() % 100) - 50) / 100.;
+                pos[i++] = y + ((rand() % 100) - 50) / 100.;
                 pos[i++] = 0;
             }
         }
@@ -384,8 +434,10 @@ void Ship::MakeTextures()
         for (size_t i=0; i < width*height*3; i++)   empty[i] = 0;
 
         GLuint* textures[] = {&vel_tex[0], &vel_tex[1],
-                              &accel_tex[0], &accel_tex[1],
-                              &accel_tex[2], &accel_tex[3]};
+                              &dvel_tex[0], &dvel_tex[1],
+                              &dvel_tex[2], &dvel_tex[3],
+                              &dpos_tex[0], &dpos_tex[1],
+                              &dpos_tex[2], &dpos_tex[3]};
 
         for (auto t: textures) {
             glGenTextures(1, t);

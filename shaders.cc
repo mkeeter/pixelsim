@@ -10,6 +10,7 @@ GLuint Shaders::acceleration = 0;
 GLuint Shaders::position = 0;
 GLuint Shaders::velocity = 0;
 GLuint Shaders::copy = 0;
+GLuint Shaders::RK4sum = 0;
 
 void Shaders::init()
 {
@@ -23,6 +24,8 @@ void Shaders::init()
                          CompileShader("velocity.frag"));
     copy = CreateProgram(CompileShader("texture.vert"),
                          CompileShader("copy.frag"));
+    RK4sum = CreateProgram(CompileShader("texture.vert"),
+                         CompileShader("rk4.frag"));
 }
 
 GLuint Shaders::CompileShader(const std::string& filename)
