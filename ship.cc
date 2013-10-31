@@ -416,11 +416,12 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                pos[i++] = x + ((rand() % 100) - 50) / 100.;
-                pos[i++] = y + ((rand() % 100) - 50) / 100.;
-                pos[i++] = ((rand() % 10) - 5) / 10.;
+                pos[i++] = x; //x + ((rand() % 100) - 50) / 100.;
+                pos[i++] = y; //y + ((rand() % 100) - 50) / 100.;
+                pos[i++] = 0; //((rand() % 10) - 5) / 10.;
             }
         }
+        pos[4] = 1.5f;
 
 
         GLuint* textures[] = {&pos_tex[0], &pos_tex[1]};

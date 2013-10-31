@@ -36,39 +36,41 @@ vec3 accel(vec3 near, vec2 delta, vec3 far)
 
     // Start with the force contribution due to linear spring
     float magnitude = k_linear * (length(delta) - length(d.xy));
-    vec3 force = vec3(magnitude * normalize(d.xy) / m, 0.0f);
+    vec3 force = vec3(magnitude * normalize(d.xy), 0.0f);
 
     // Find the force from the far point's angular spring torquing
     // being exerted on the near point.
-    {
+    if (true) {
         float angle = atan(d.y, d.x);
 
         // Find the angle between our desired beam and the actual beam, from
         // the perspective of the far point (which is exerting this force).
-        float d_angle = angle - (atan(-delta.y, -delta.x) + far.z);
+        float d_angle = atan(d.y, d.x) - atan(-delta.y, -delta.x);
         while (d_angle < -M_PI)    d_angle += 2*M_PI;
         while (d_angle >  M_PI)    d_angle -= 2*M_PI;
+        d_angle -= far.z;
 
-        vec2 force_direction = vec2(cos(angle + M_PI/2),
-                                    sin(angle + M_PI/2));
+        // Force direction is 90 degrees from moment arm
+        vec2 force_direction = vec2(-d.y, d.x);
 
         // Acceleration from torsional spring at far point:
         // direction vector * (angle * k * lever arm length) / mass
         force.xy += force_direction *
-            (-d_angle * k_torsional * length(d.xy)) / m;
+            (-d_angle * k_torsional * length(d.xy));
     }
 
     // Torque due to the near point's angular spring
-    {
+    if (true) {
         // Desired angle from the perspective of the near point
-        float d_angle = atan(-d.y, -d.x) - (atan(delta.y, delta.x) + near.z);
+        float d_angle = atan(-d.y, -d.x) - atan(delta.y, delta.x);
         while (d_angle < -M_PI)    d_angle += 2*M_PI;
         while (d_angle >  M_PI)    d_angle -= 2*M_PI;
+        d_angle -= near.z;
 
-        force.z = d_angle * k_torsional / I;
+        force.z = d_angle * k_torsional;
     }
 
-    return force;
+    return vec3(force.xy / m, force.z / I);
 }
 
 void main()
@@ -102,8 +104,8 @@ void main()
 
     // Apply damping based on velocity
     vec3 near_vel = texture2D(vel, tex_coord).xyz;
-    total_accel += vec3(-c_linear * near_vel.xy / m,
-                        -c_torsional * near_vel.z / I);
+    total_accel += vec3(-c_linear    * near_vel.xy / m,
+                        -c_torsional * near_vel.z  / I);
 
     gl_FragColor = vec4(total_accel, 1.0f);
 }

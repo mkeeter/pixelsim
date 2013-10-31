@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 
     // Initialize the library
     if (!glfwInit())    return -1;
-    glfwWindowHint(GLFW_SAMPLES, 8);    // multisampling!
+    glfwWindowHint(GLFW_SAMPLES, 0);    // multisampling!
 
     // Create a windowed mode window and its OpenGL context
     GLFWwindow* const window = glfwCreateWindow(
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
         const auto t0 = std::chrono::high_resolution_clock::now();
 
         // Update the ship
-        ship.Update();
+        ship.Update(0.001f);
 
         // Draw the scene
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
