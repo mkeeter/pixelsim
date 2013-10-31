@@ -10,7 +10,7 @@ class Ship
 public:
     Ship(const std::string& imagename);
     ~Ship();
-    void Update(const float dt=0.1);
+    void Update(const float dt=0.1, const int steps=5);
     void Draw(const int window_width, const int window_height) const;
 private:
     void MakeBuffers();

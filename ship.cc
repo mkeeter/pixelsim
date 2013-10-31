@@ -146,9 +146,8 @@ void Ship::ApplyVelocity(const float dt, const int source)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Ship::Update(const float dt)
+void Ship::Update(const float dt, const int steps)
 {
-    const int steps = 5;
     const float dt_ = dt / steps;
     for (int i=0; i < steps; ++i) {
         GetDerivatives(tick, 0);    // k1 = f(y)
@@ -421,7 +420,11 @@ void Ship::MakeTextures()
                 pos[i++] = 0; //((rand() % 10) - 5) / 10.;
             }
         }
-        pos[4] = 1.5f;
+        pos[3*width/2 - 2] = 0.75f;
+        pos[3*width/2 - 1] = 0.4f;
+
+        pos[3*width/2 + 1] = 0.75f;
+        pos[3*width/2 + 2] = -0.4f;
 
 
         GLuint* textures[] = {&pos_tex[0], &pos_tex[1]};

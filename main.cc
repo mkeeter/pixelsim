@@ -98,7 +98,7 @@ int main(int argc, char** argv)
         const auto t0 = std::chrono::high_resolution_clock::now();
 
         // Update the ship
-        ship.Update(0.001f);
+        ship.Update(0.1f);
 
         // Draw the scene
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
