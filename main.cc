@@ -61,8 +61,9 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_SAMPLES, 0);    // multisampling!
 
     // Create a windowed mode window and its OpenGL context
+    WindowSize window_size(640, 480);
     GLFWwindow* const window = glfwCreateWindow(
-            640, 480, "pixelFEM", NULL, NULL);
+            window_size.width, window_size.height, "pixelFEM", NULL, NULL);
 
     if (!window)
     {
@@ -83,7 +84,6 @@ int main(int argc, char** argv)
     // Use a callback to update glViewport when the window is resized, by
     // saving a pointer to a WindowSize struct in the window's user pointer
     // field.
-    WindowSize window_size(640, 480);
     glfwSetWindowUserPointer(window, static_cast<void*>(&window_size));
     glfwSetWindowSizeCallback(window, window_size_callback);
 
