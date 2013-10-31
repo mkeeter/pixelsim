@@ -210,6 +210,7 @@ void Ship::GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt)
 
 void Ship::Draw(const int window_width, const int window_height) const
 {
+#if 1 
     glViewport(0, 0, window_width, window_height);
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -242,6 +243,24 @@ void Ship::Draw(const int window_width, const int window_height) const
     glUniform1i(glGetUniformLocation(program, "filled"), 1);
 
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
+#else
+
+    glViewport(0, 0, width, height);
+    GLuint program = Shaders::neighbors;
+    glUseProgram(program);
+
+    const GLint s = glGetUniformLocation(program, "ship_size");
+    glUniform2i(s, width, height);
+
+    // Load triangles that draw a flat rectangle from -1, -1, to 1, 1
+    glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
+    const GLint v = glGetAttribLocation(program, "vertex_position");
+    glEnableVertexAttribArray(v);
+    glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+#endif
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -397,21 +416,12 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-//                pos[i++] = x + (x == 0 && y == 0 ? -0.5 : 0);// + ((rand() % 100) - 50) / 100.;
-//                pos[i++] = y + (x == 0 && y == 0 ? -0.5 : 0);// + ((rand() % 100) - 50) / 100.;
                 pos[i++] = x + ((rand() % 100) - 50) / 100.;
                 pos[i++] = y + ((rand() % 100) - 50) / 100.;
-                pos[i++] = 0;
+                pos[i++] = ((rand() % 10) - 5) / 10.;
             }
         }
-        // Custom settings for 2x1 image
-        /*
-        pos[0] = 0;
-        pos[1] = 0;
-        pos[2] = 0.1;
-        pos[3] = 1;
-        pos[4] = 0;
-        pos[5] = 0;*/
+
 
         GLuint* textures[] = {&pos_tex[0], &pos_tex[1]};
         for (auto t : textures)

@@ -12,6 +12,10 @@ GLuint Shaders::velocity = 0;
 GLuint Shaders::copy = 0;
 GLuint Shaders::RK4sum = 0;
 
+GLuint Shaders::neighbors = 0;
+
+////////////////////////////////////////////////////////////////////////////////
+
 void Shaders::init()
 {
     ship = CreateProgram(CompileShader("ship.vert"),
@@ -26,6 +30,9 @@ void Shaders::init()
                          CompileShader("copy.frag"));
     RK4sum = CreateProgram(CompileShader("texture.vert"),
                          CompileShader("rk4.frag"));
+
+    neighbors = CreateProgram(CompileShader("texture.vert"),
+                         CompileShader("neighbors.frag"));
 }
 
 GLuint Shaders::CompileShader(const std::string& filename)

@@ -23,20 +23,20 @@ uniform float I;    // point's inertia
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// near, far, and far_ are x,y,a coordinates.
-// far is the desired (0-force/torque) position of the far point, and far_ is
-// the actual position of the far point.
+// near and far are x,y,a coordinates.
+// delta is the nominal vector from near to far.  In all likelihood, far
+// is somewhere else, which exerts a force.
 vec3 accel(vec3 near, vec2 delta, vec3 far)
 {
     // A pixel can't influence itself.
-    if (delta.x == 0.0f && delta.y == 0.0f)     return vec3(0.0f);
+    if (delta.x == 0.0f && delta.y == 0.0f)     return vec3(0.0f, 0.0f, 0.0f);
 
     // Vectors pointing from far to near
     vec3 d = near - far;
 
     // Start with the force contribution due to linear spring
     float magnitude = k_linear * (length(delta) - length(d.xy));
-    vec3 force = vec3(magnitude * normalize(d.xy), 0.0f);
+    vec3 force = vec3(magnitude * normalize(d.xy) / m, 0.0f);
 
     // Find the force from the far point's angular spring torquing
     // being exerted on the near point.
@@ -52,11 +52,11 @@ vec3 accel(vec3 near, vec2 delta, vec3 far)
         vec2 force_direction = vec2(cos(angle + M_PI/2),
                                     sin(angle + M_PI/2));
 
-        // Force from torsional spring at far point:
-        // direction vector * (angle * k * lever arm length)
-        force.xy += force_direction * (-d_angle * k_torsional * length(d.xy));
+        // Acceleration from torsional spring at far point:
+        // direction vector * (angle * k * lever arm length) / mass
+        force.xy += force_direction *
+            (-d_angle * k_torsional * length(d.xy)) / m;
     }
-    force /= m;
 
     // Torque due to the near point's angular spring
     {
@@ -65,7 +65,7 @@ vec3 accel(vec3 near, vec2 delta, vec3 far)
         while (d_angle < -M_PI)    d_angle += 2*M_PI;
         while (d_angle >  M_PI)    d_angle -= 2*M_PI;
 
-        force.z += d_angle * k_torsional / I;
+        force.z = d_angle * k_torsional / I;
     }
 
     return force;
@@ -82,19 +82,17 @@ void main()
             // Pick an offset that will give us the next pixel
             // in the desired direction.
             vec2 delta = vec2(dx, dy);
-            float tex_dx = float(dx) / float(ship_size.x);
-            float tex_dy = float(dy) / float(ship_size.y);
-            vec2 tex_delta = vec2(tex_dx, tex_dy);
-
+            vec2 far_tex_coord = tex_coord + vec2(delta.x / ship_size.x,
+                                                  delta.y / ship_size.y);
             // If the chosen pixel is within the image (i.e. it has texture
             // coordinates between 0 and 1) and is marked as filled in the
             // pixel occupancy texture, then find and add its acceleration.
-            if (tex_coord.x + tex_dx >= 0.0f && tex_coord.x + tex_dx <= 1.0f &&
-                tex_coord.y + tex_dy >= 0.0f && tex_coord.y + tex_dy <= 1.0f &&
-                texture2D(filled, tex_coord + tex_delta).r != 0)
+            if (far_tex_coord.x > 0.0f && far_tex_coord.x < 1.0f &&
+                far_tex_coord.y > 0.0f && far_tex_coord.y < 1.0f &&
+                texture2D(filled, far_tex_coord).r != 0)
             {
                 // Get the actual location of the far point from the texture
-                vec3 far = texture2D(pos, tex_coord + tex_delta).xyz;
+                vec3 far = texture2D(pos, far_tex_coord).xyz;
 
                 // Calculate and accumulate acceleration
                 total_accel += accel(near, delta, far);
