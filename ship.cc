@@ -394,7 +394,19 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                filled[i++] = data[4*(width*(height-1-y) + x) + 3] ? 255 : 0;
+                // Get the pixel's address in the data array:
+                uint8_t* const pixel = &data[4*(width*(height-1-y) + x)];
+
+                // Any pixel with an alpha value > 0 is filled.
+                const bool pixel_filled = pixel[3] != 0;
+
+                // Only pixels that are pure red count as engines.
+                const bool pixel_engine = filled && pixel[0] == 255 &&
+                                          pixel[1] == 0  && pixel[2] == 0;
+
+                if (pixel_engine)           filled[i++] = 255;
+                else if (pixel_filled)      filled[i++] = 128;
+                else                        filled[i++] = 0;
             }
         }
         glGenTextures(1, &filled_tex);

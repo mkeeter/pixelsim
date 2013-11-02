@@ -98,6 +98,8 @@ void main()
         }
     }
 
+    if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 10.0f, 0.0f);
+
     // Apply damping based on velocity
     vec3 near_vel = texture2D(vel, tex_coord).xyz;
     total_accel += vec3(-c_linear    * near_vel.xy / m,
