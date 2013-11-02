@@ -73,8 +73,8 @@ void Ship::GetAcceleration(const int source, const int accel_out)
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
     glUniform1f(glGetUniformLocation(program, "k_linear"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "k_torsional"), 1.0f);
-    glUniform1f(glGetUniformLocation(program, "c_linear"), 1.5f);
-    glUniform1f(glGetUniformLocation(program, "c_torsional"), 1.5f);
+    glUniform1f(glGetUniformLocation(program, "c_linear"), 5.0f);
+    glUniform1f(glGetUniformLocation(program, "c_torsional"), 5.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
 
@@ -415,14 +415,11 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                pos[i++] = x; //x + ((rand() % 100) - 50) / 100.;
-                pos[i++] = y; //y + ((rand() % 100) - 50) / 100.;
-                pos[i++] = 0; //((rand() % 10) - 5) / 10.;
+                pos[i++] = x;
+                pos[i++] = y;
+                pos[i++] = 0;
             }
         }
-        pos[3*width/2 - 2] = 0.05f;
-        pos[3*width/2 + 1] = 0.05f;
-
 
         GLuint* textures[] = {&pos_tex[0], &pos_tex[1]};
         for (auto t : textures)
