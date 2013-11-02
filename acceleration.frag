@@ -26,7 +26,7 @@ uniform float I;    // point's inertia
 // near and far are x,y,a coordinates.
 // delta is the nominal vector from near to far.  In all likelihood, far
 // is somewhere else, which exerts a force.
-vec3 accel(vec3 near, vec2 delta, vec3 far)
+vec3 spring_accel(vec3 near, vec2 delta, vec3 far)
 {
     // A pixel can't influence itself.
     if (delta.x == 0.0f && delta.y == 0.0f)     return vec3(0.0f, 0.0f, 0.0f);
@@ -69,9 +69,20 @@ vec3 accel(vec3 near, vec2 delta, vec3 far)
     return vec3(force.xy / m, force.z / I);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+vec3 damper_accel(vec3 near_pos, vec3 near_vel, vec3 far_pos, vec3 far_vel)
+{
+    return vec3(0.0f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void main()
 {
-    vec3 near = texture2D(pos, tex_coord).xyz;
+    vec3 near_pos = texture2D(pos, tex_coord).xyz;
+    vec3 near_vel = texture2D(vel, tex_coord).xyz;
+
     vec3 total_accel = vec3(0.0f);
 
     // Iterate over the nine neighboring cells, accumulating forces.
@@ -90,20 +101,19 @@ void main()
                 texture2D(filled, far_tex_coord).r != 0)
             {
                 // Get the actual location of the far point from the texture
-                vec3 far = texture2D(pos, far_tex_coord).xyz;
+                vec3 far_pos = texture2D(pos, far_tex_coord).xyz;
+                vec3 far_vel = texture2D(vel, far_tex_coord).xyz;
 
                 // Calculate and accumulate acceleration
-                total_accel += accel(near, delta, far);
+                total_accel += spring_accel(near_pos, delta, far_pos) +
+                               damper_accel(near_pos, near_vel,
+                                            far_pos, far_vel);
             }
         }
     }
 
+    // Accelerate engine pixels upwards
     if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
-
-    // Apply damping based on velocity
-    vec3 near_vel = texture2D(vel, tex_coord).xyz;
-    total_accel += vec3(-c_linear    * near_vel.xy / m,
-                        -c_torsional * near_vel.z  / I);
 
     gl_FragColor = vec4(total_accel, 1.0f);
 }
