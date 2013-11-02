@@ -73,8 +73,8 @@ void Ship::GetAcceleration(const int source, const int accel_out)
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
     glUniform1f(glGetUniformLocation(program, "k_linear"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "k_torsional"), 1.0f);
-    glUniform1f(glGetUniformLocation(program, "c_linear"), 1.0f);
-    glUniform1f(glGetUniformLocation(program, "c_torsional"), 1.0f);
+    glUniform1f(glGetUniformLocation(program, "c_linear"), 1.5f);
+    glUniform1f(glGetUniformLocation(program, "c_torsional"), 1.5f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
 

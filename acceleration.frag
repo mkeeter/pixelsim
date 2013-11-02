@@ -35,23 +35,20 @@ vec3 accel(vec3 near, vec2 delta, vec3 far)
     vec3 d = near - far;
 
     // Start with the force contribution due to linear spring
-    float magnitude = k_linear * (length(delta) - length(d.xy));
+    float magnitude = k_linear * (length(delta.xy) - length(d.xy));
     vec3 force = vec3(magnitude * normalize(d.xy), 0.0f);
 
     // Find the force from the far point's angular spring torquing
     // being exerted on the near point.
     if (true) {
-        float angle = atan(d.y, d.x);
-
         // Find the angle between our desired beam and the actual beam, from
         // the perspective of the far point (which is exerting this force).
-        float d_angle = atan(d.y, d.x) - atan(-delta.y, -delta.x);
+        float d_angle = atan(d.y, d.x) - atan(-delta.y, -delta.x) + far.z;
         while (d_angle < -M_PI)    d_angle += 2*M_PI;
         while (d_angle >  M_PI)    d_angle -= 2*M_PI;
-        d_angle -= far.z;
 
         // Force direction is 90 degrees from moment arm
-        vec2 force_direction = vec2(-d.y, d.x);
+        vec2 force_direction = normalize(vec2(-d.y, d.x));
 
         // Acceleration from torsional spring at far point:
         // direction vector * (angle * k * lever arm length) / mass
@@ -62,10 +59,9 @@ vec3 accel(vec3 near, vec2 delta, vec3 far)
     // Torque due to the near point's angular spring
     if (true) {
         // Desired angle from the perspective of the near point
-        float d_angle = atan(-d.y, -d.x) - atan(delta.y, delta.x);
+        float d_angle = atan(-d.y, -d.x) - atan(delta.y, delta.x) - near.z;
         while (d_angle < -M_PI)    d_angle += 2*M_PI;
         while (d_angle >  M_PI)    d_angle -= 2*M_PI;
-        d_angle -= near.z;
 
         force.z = d_angle * k_torsional;
     }
