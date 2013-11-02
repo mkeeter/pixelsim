@@ -14,8 +14,6 @@ public:
     static GLuint position;
     static GLuint copy;
     static GLuint RK4sum;
-
-    static GLuint neighbors;
 private:
     static GLuint CompileShader(const std::string& filename);
     static GLuint CreateProgram(const GLuint vert, const GLuint frag);
