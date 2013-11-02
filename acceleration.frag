@@ -73,7 +73,34 @@ vec3 spring_accel(vec3 near, vec2 delta, vec3 far)
 
 vec3 damper_accel(vec3 near_pos, vec3 near_vel, vec3 far_pos, vec3 far_vel)
 {
-    return vec3(0.0f);
+    vec3 force = vec3(0.0f);
+
+    {
+        vec2 vel = near_vel.xy - far_vel.xy;    // motion of near point
+        vec2 d = near_pos.xy - far_pos.xy;
+
+        // Start with the radial velocity component.
+        vec2 radial = dot(vel, normalize(d)) * normalize(d);
+        force.xy += -c_linear * radial;
+
+        // Find angular velocity about the far point (in rad/sec)
+        vec2 angular_direction = normalize(vec2(-d.y, d.x));
+        float angular = far_pos.z - dot(angular_direction, vel) / length(d);
+
+        force.xy += angular_direction * (angular * c_torsional) * length(d);
+    }
+
+    // Finally, let's figure out our angular damping.
+    {
+        vec2 vel = far_vel.xy - near_vel.xy;  // Motion of far point
+        vec2 d = far_pos.xy - near_pos.xy;
+
+        vec2 angular_direction = normalize(vec2(-d.y, d.x));
+        float angular = dot(vel, angular_direction) / length(d) - near_vel.z;
+        force.z = c_torsional * angular;
+    }
+
+    return vec3(force.xy / m, force.z / I);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
