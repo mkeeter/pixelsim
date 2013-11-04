@@ -23,84 +23,42 @@ uniform float I;    // point's inertia
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// near and far are x,y,a coordinates.
-// delta is the nominal vector from near to far.  In all likelihood, far
-// is somewhere else, which exerts a force.
-vec3 spring_accel(vec3 near, vec2 delta, vec3 far)
+vec3 accel(const vec3 a, const vec3 a_dot, const vec3 delta,
+           const vec3 b, const vec3 b_dot)
 {
-    // A pixel can't influence itself.
-    if (delta.x == 0.0f && delta.y == 0.0f)     return vec3(0.0f, 0.0f, 0.0f);
+    const vec3 v = vec3(b.xy - a.xy, atan(b.y - a.y, b.x - a.x));
+    const vec3 v_ = vec3(normalize(v.xy), v.z);
+    const vec3 p_ = vec3(v_.x, -v_.y, v_.z + M_PI/2);
 
-    // Vectors pointing from far to near
-    vec2 d = near.xy - far.xy;
+    // Force from linear spring
+    const vec3 F_kL = vec3(
+            -k_linear * (length(d.xy) - length(v.xy)) * v_.xy,
+            0.0f);
 
-    // Start with the force contribution due to linear spring
-    float magnitude = k_linear * (length(delta) - length(d));
-    vec3 force = vec3(magnitude * normalize(d), 0.0f);
+    // Torque from near torsional spring
+    const vec3 T_k = vec3(0.0f, 0.0f,
+            -k_torsional * (d.z + a.z - v.z));
 
-    // Find the force from the far point's angular spring torquing
-    // being exerted on the near point.
-    {
-        // Find the angle between our desired beam and the actual beam, from
-        // the perspective of the far point (which is exerting this force).
-        float d_angle = atan(d.y, d.x) - atan(-delta.y, -delta.x) + far.z;
-        while (d_angle < -M_PI)    d_angle += 2*M_PI;
-        while (d_angle >  M_PI)    d_angle -= 2*M_PI;
+    // Force from far torsional spring
+    const vec3 F_kT = vec3(
+            -p_.xy * k_torsional * length(v.xy) * (d.z + b.z - v.z),
+            0.0f);
 
-        // Force direction is 90 degrees from moment arm
-        vec2 force_direction = normalize(vec2(-d.y, d.x));
+    // Force from linear damper (check this!)
+    const vec3 F_cL = vec3(
+            v_.xy * c_linear * dot(b_dot.xy - a_dot.xy, v_.xy),
+            0.0f);
 
-        // Acceleration from torsional spring at far point:
-        // direction vector * (angle * k * lever arm length) / mass
-        force.xy += force_direction *
-            (-d_angle * k_torsional * length(d));
-    }
+    // Torque from near torsional damper
+    const vec3 T_c = vec3(0.0f, 0.0f,
+            -c_torsional * (a_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy)));
 
-    // Torque due to the near point's angular spring
-    {
-        // Desired angle from the perspective of the near point
-        float d_angle = atan(-d.y, -d.x) - atan(delta.y, delta.x) - near.z;
-        while (d_angle < -M_PI)    d_angle += 2*M_PI;
-        while (d_angle >  M_PI)    d_angle -= 2*M_PI;
+    // Force from far torsional damper
+    const vec3 F_cT = vec3(
+            -p_.xy * c_torsional * length(v.xy) * (b_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy)),
+            0.0f);
 
-        force.z = d_angle * k_torsional;
-    }
-
-    return vec3(force.xy / m, force.z / I);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-vec3 damper_accel(vec3 near_pos, vec3 near_vel, vec3 far_pos, vec3 far_vel)
-{
-    vec3 force = vec3(0.0f);
-
-    {
-        vec2 vel = near_vel.xy - far_vel.xy;    // motion of near point
-        vec2 d = near_pos.xy - far_pos.xy;
-
-        // Start with the radial velocity component.
-        vec2 radial = dot(vel, normalize(d)) * normalize(d);
-        force.xy += -c_linear * radial;
-
-        // Find angular velocity about the far point (in rad/sec)
-        vec2 angular_direction = normalize(vec2(-d.y, d.x));
-        float angular = far_pos.z - dot(angular_direction, vel) / length(d);
-
-        force.xy += angular_direction * (angular * c_torsional) * length(d);
-    }
-
-    // Finally, let's figure out our angular damping.
-    {
-        vec2 vel = far_vel.xy - near_vel.xy;  // Motion of far point
-        vec2 d = far_pos.xy - near_pos.xy;
-
-        vec2 angular_direction = normalize(vec2(-d.y, d.x));
-        float angular = dot(vel, angular_direction) / length(d) - near_vel.z;
-        force.z = c_torsional * angular;
-    }
-
-    return vec3(force.xy / m, force.z / I);
+    return F_kL + T_k + F_kT + F_cL + T_c + F_cT;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +75,7 @@ void main()
         for (int dy=-1; dy <= 1; ++dy) {
             // Pick an offset that will give us the next pixel
             // in the desired direction.
-            vec2 delta = vec2(dx, dy);
+            vec3 delta = vec3(dx, dy, atan(dy, dx));
             vec2 far_tex_coord = tex_coord + vec2(delta.x / ship_size.x,
                                                   delta.y / ship_size.y);
             // If the chosen pixel is within the image (i.e. it has texture
@@ -131,16 +89,14 @@ void main()
                 vec3 far_pos = texture2D(pos, far_tex_coord).xyz;
                 vec3 far_vel = texture2D(vel, far_tex_coord).xyz;
 
-                // Calculate and accumulate acceleration
-                total_accel += spring_accel(near_pos, delta, far_pos) +
-                               damper_accel(near_pos, near_vel,
-                                            far_pos, far_vel);
+                total_accel += accel(near, near_vel, delta,
+                                     far, far_vel);
             }
         }
     }
 
     // Accelerate engine pixels upwards
-    if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
+    //if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
 
     gl_FragColor = vec4(total_accel, 1.0f);
 }
