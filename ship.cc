@@ -148,6 +148,33 @@ void Ship::ApplyVelocity(const float dt, const int source)
 
 void Ship::Update(const float dt, const int steps)
 {
+    float tex[width*height*3];
+    glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
+    std::cout << "Positions:\n";
+    for (int i=0; i < width*height*3; i += 3)
+    {
+        std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
+    }
+    std::cout << std::endl;
+    glBindTexture(GL_TEXTURE_2D, vel_tex[tick]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
+    std::cout << "Velocities:\n";
+    for (int i=0; i < width*height*3; i += 3)
+    {
+        std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
+    }
+    std::cout << std::endl;
+    GetDerivatives(tick, 0);
+    glBindTexture(GL_TEXTURE_2D, dvel_tex[0]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
+    std::cout << "Accelerations:\n";
+    for (int i=0; i < width*height*3; i += 3)
+    {
+        std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
+    }
+    std::cout << std::endl << std::endl;
+
     const float dt_ = dt / steps;
     for (int i=0; i < steps; ++i) {
         GetDerivatives(tick, 0);    // k1 = f(y)
@@ -427,11 +454,16 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                pos[i++] = x + ((rand() % 100) - 50) / 100.;
-                pos[i++] = y + ((rand() % 100) - 50) / 100.;
+                pos[i++] = x ;//+ ((rand() % 100) - 50) / 200.;
+                pos[i++] = y ;//+ ((rand() % 100) - 50) / 200.;
+
+                // special case: tilt the middle pixel in a 3x3
+//                if (x == 1 && y == 1) pos[i++] = ((rand() % 100) - 50) / 200.;
+ //               else pos[i++] = 0;
                 pos[i++] = 0;
             }
         }
+        pos[2] = 0.1;
 
         GLuint* textures[] = {&pos_tex[0], &pos_tex[1]};
         for (auto t : textures)
