@@ -73,8 +73,8 @@ void Ship::GetAcceleration(const int source, const int accel_out)
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
     glUniform1f(glGetUniformLocation(program, "k_linear"), 3000.0f);
     glUniform1f(glGetUniformLocation(program, "k_torsional"), 2500.0f);
-    glUniform1f(glGetUniformLocation(program, "c_linear"), 50.0f);
-    glUniform1f(glGetUniformLocation(program, "c_torsional"), 50.0f);
+    glUniform1f(glGetUniformLocation(program, "c_linear"), 500.0f);
+    glUniform1f(glGetUniformLocation(program, "c_torsional"), 500.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
 
@@ -148,6 +148,7 @@ void Ship::ApplyVelocity(const float dt, const int source)
 
 void Ship::Update(const float dt, const int steps)
 {
+#if 0
     float tex[width*height*3];
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
@@ -174,6 +175,7 @@ void Ship::Update(const float dt, const int steps)
         std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
     }
     std::cout << std::endl << std::endl;
+#endif
 
     const float dt_ = dt / steps;
     for (int i=0; i < steps; ++i) {
@@ -454,12 +456,8 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                pos[i++] = x ;//+ ((rand() % 100) - 50) / 200.;
-                pos[i++] = y ;//+ ((rand() % 100) - 50) / 200.;
-
-                // special case: tilt the middle pixel in a 3x3
-//                if (x == 1 && y == 1) pos[i++] = ((rand() % 100) - 50) / 200.;
- //               else pos[i++] = 0;
+                pos[i++] = x;// + ((rand() % 100) - 50) / 200.;
+                pos[i++] = y;// + ((rand() % 100) - 50) / 200.;
                 pos[i++] = 0;
             }
         }

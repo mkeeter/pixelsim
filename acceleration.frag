@@ -26,7 +26,7 @@ uniform float I;    // point's inertia
 // Wraps an angle to the range -pi, pi
 float wrap(float angle)
 {
-    return mod(angle + M_PI, 2*M_PI) - M_PI;
+    return mod(angle + M_PI, 2.0f*M_PI) - M_PI;
 }
 
 vec3 accel(vec3 a, vec3 a_dot, vec3 d,
@@ -34,7 +34,7 @@ vec3 accel(vec3 a, vec3 a_dot, vec3 d,
 {
     vec3 v  = vec3(b.xy - a.xy, atan(b.y - a.y, b.x - a.x));
     vec3 v_ = vec3(normalize(v.xy), v.z);
-    vec3 p_ = vec3(-v_.y, v_.x, v_.z + M_PI/2);
+    vec3 p_ = vec3(-v_.y, v_.x, v_.z + M_PI/2.0f);
 
     // Force from linear spring
     vec3 F_kL = vec3(
@@ -64,8 +64,7 @@ vec3 accel(vec3 a, vec3 a_dot, vec3 d,
             -p_.xy * c_torsional * length(v.xy) * (b_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy)),
             0.0f);
 
-    //vec3 force = F_kL + T_k + F_kT + F_cL + T_c + F_cT;
-    vec3 force = T_k + T_c;
+    vec3 force = F_kL + T_k + F_kT + F_cL + T_c + F_cT;
     return vec3(force.xy / m, force.z / I);
 }
 
@@ -82,8 +81,9 @@ void main()
     for (int dx=-1; dx <= 1; ++dx) {
         for (int dy=-1; dy <= 1; ++dy) {
             // Find the texture coordinate of the far pixel's data
-            vec2 far_tex_coord = tex_coord + vec2(dx / float(ship_size.x),
-                                                  dy / float(ship_size.y));
+            vec2 far_tex_coord = tex_coord +
+                                 vec2(float(dx) / float(ship_size.x),
+                                      float(dy) / float(ship_size.y));
             // If the chosen pixel is within the image (i.e. it has texture
             // coordinates between 0 and 1) and is marked as filled in the
             // pixel occupancy texture, then find and add its acceleration.
@@ -97,7 +97,8 @@ void main()
                 vec3 far_vel = texture2D(vel, far_tex_coord).xyz;
 
                 // Find the nominal offset and angle between the points.
-                vec3 delta = vec3(dx, dy, atan(float(dy), float(dx)));
+                vec3 delta = vec3(float(dx), float(dy),
+                                  atan(float(dy), float(dx)));
 
                 total_accel += accel(near_pos, near_vel, delta,
                                      far_pos, far_vel);
@@ -106,7 +107,7 @@ void main()
     }
 
     // Accelerate engine pixels upwards
-    //if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
+    if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
 
     gl_FragColor = vec4(total_accel, 1.0f);
 }
