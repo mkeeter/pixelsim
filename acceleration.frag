@@ -37,35 +37,34 @@ vec3 accel(vec3 a, vec3 a_dot, vec3 d,
     vec3 p_ = vec3(-v_.y, v_.x, v_.z + M_PI/2.0f);
 
     // Force from linear spring
-    vec3 F_kL = vec3(
-            -k_linear * (length(d.xy) - length(v.xy)) * v_.xy,
-            0.0f);
+    vec2 F_kL = vec2(
+            -k_linear * (length(d.xy) - length(v.xy)) * v_.xy);
 
     // Torque from near torsional spring
-    vec3 T_k = vec3(0.0f, 0.0f,
-            -k_torsional * wrap(d.z + a.z - v.z));
+    float T_k = -k_torsional * wrap(d.z + a.z - v.z);
 
     // Force from far torsional spring
-    vec3 F_kT = vec3(
-            -p_.xy * k_torsional * length(v.xy) * wrap(d.z + b.z - v.z),
-            0.0f);
+    vec2 F_kT = vec2(
+            -p_.xy * k_torsional * length(v.xy) * wrap(d.z + b.z - v.z));
 
     // Force from linear damper (check this!)
-    vec3 F_cL = vec3(
-            v_.xy * c_linear * dot(b_dot.xy - a_dot.xy, v_.xy),
-            0.0f);
+    vec2 F_cL = vec2(
+            v_.xy * c_linear * dot(b_dot.xy - a_dot.xy, v_.xy));
 
     // Torque from near torsional damper
-    vec3 T_c = vec3(0.0f, 0.0f,
-            -c_torsional * (a_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy)));
+    float T_c =
+            -c_torsional *
+            (a_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy));
 
     // Force from far torsional damper
-    vec3 F_cT = vec3(
-            -p_.xy * c_torsional * length(v.xy) * (b_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy)),
-            0.0f);
+    vec2 F_cT = vec2(
+            -p_.xy * c_torsional * length(v.xy) *
+            (b_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy)));
 
-    vec3 force = F_kL + T_k + F_kT + F_cL + T_c + F_cT;
-    return vec3(force.xy / m, force.z / I);
+    vec2 force = F_kL + F_kT + F_cL + F_cT;
+    float torque = T_k + T_c;
+
+    return vec3(force / m, torque / I);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,7 +106,7 @@ void main()
     }
 
     // Accelerate engine pixels upwards
-    if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
+    //if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
 
     gl_FragColor = vec4(total_accel, 1.0f);
 }

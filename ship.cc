@@ -71,8 +71,17 @@ void Ship::GetAcceleration(const int source, const int accel_out)
 
     // Load various uniform values
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
-    glUniform1f(glGetUniformLocation(program, "k_linear"), 3000.0f);
-    glUniform1f(glGetUniformLocation(program, "k_torsional"), 2500.0f);
+    /*
+    glUniform1f(glGetUniformLocation(program, "k_linear"), 5000.0f);
+    glUniform1f(glGetUniformLocation(program, "k_torsional"), 5000.0f);
+    glUniform1f(glGetUniformLocation(program, "c_linear"), 500.0f);
+    glUniform1f(glGetUniformLocation(program, "c_torsional"), 500.0f);
+    glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
+    glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
+    */
+
+    glUniform1f(glGetUniformLocation(program, "k_linear"), 100.0f);
+    glUniform1f(glGetUniformLocation(program, "k_torsional"), 100.0f);
     glUniform1f(glGetUniformLocation(program, "c_linear"), 500.0f);
     glUniform1f(glGetUniformLocation(program, "c_torsional"), 500.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
@@ -148,7 +157,7 @@ void Ship::ApplyVelocity(const float dt, const int source)
 
 void Ship::Update(const float dt, const int steps)
 {
-#if 0
+#if 1
     float tex[width*height*3];
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
@@ -238,7 +247,7 @@ void Ship::GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt)
 
 void Ship::Draw(const int window_width, const int window_height) const
 {
-#if 1 
+#if 1
     glViewport(0, 0, window_width, window_height);
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -456,12 +465,11 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
-                pos[i++] = x;// + ((rand() % 100) - 50) / 200.;
+                pos[i++] = x;//+ ((rand() % 100) - 50) / 200.;
                 pos[i++] = y;// + ((rand() % 100) - 50) / 200.;
                 pos[i++] = 0;
             }
         }
-        pos[2] = 0.1;
 
         GLuint* textures[] = {&pos_tex[0], &pos_tex[1]};
         for (auto t : textures)
