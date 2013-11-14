@@ -57,9 +57,9 @@ vec3 accel(vec3 a, vec3 a_dot, vec3 d,
             (a_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy));
 
     // Force from far torsional damper
-    vec2 F_cT = vec2(
+    vec2 F_cT =
             -p_.xy * c_torsional * length(v.xy) *
-            (b_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy)));
+            (b_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy));
 
     vec2 force = F_kL + F_kT + F_cL + F_cT;
     float torque = T_k + T_c;
