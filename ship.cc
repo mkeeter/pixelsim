@@ -275,10 +275,6 @@ void Ship::Draw(const int window_width, const int window_height) const
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
     glUniform1i(glGetUniformLocation(program, "pos"), 0);
 
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, filled_tex);
-    glUniform1i(glGetUniformLocation(program, "filled"), 1);
-
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
 #else
 
@@ -364,26 +360,26 @@ void Ship::MakeBuffers()
         for (size_t x=0; x < width; ++x) {
             if (data[y*width*4 + x*4 + 3]) {
                 // First triangle
-                vertices.push_back(x-0.5);
-                vertices.push_back(height-y-1.5);
+                vertices.push_back(x);
+                vertices.push_back(height-y-1);
 
-                vertices.push_back(x+0.5);
-                vertices.push_back(height-y-1.5);
+                vertices.push_back(x+1);
+                vertices.push_back(height-y-1);
 
-                vertices.push_back(x+0.5);
-                vertices.push_back(height-y-0.5);
+                vertices.push_back(x+1);
+                vertices.push_back(height-y);
 
                 // Second triangle
-                vertices.push_back(x+0.5);
-                vertices.push_back(height-y-0.5);
+                vertices.push_back(x+1);
+                vertices.push_back(height-y);
 
-                vertices.push_back(x-0.5);
-                vertices.push_back(height-y-0.5);
+                vertices.push_back(x);
+                vertices.push_back(height-y);
 
-                vertices.push_back(x-0.5);
-                vertices.push_back(height-y-1.5);
+                vertices.push_back(x);
+                vertices.push_back(height-y-1);
 
-                // Every vertex gets a color and initial position
+                // Every vertex gets a color from the image
                 for (int v=0; v < 6; ++v) {
                     colors.push_back(data[y*width*4 + x*4]);
                     colors.push_back(data[y*width*4 + x*4 + 1]);
@@ -407,13 +403,15 @@ void Ship::MakeBuffers()
     glBufferData(GL_ARRAY_BUFFER, colors.size()*sizeof(colors[0]),
                  &colors[0], GL_STATIC_DRAW);
 
+
+    // Make a screen-filling flat pane used for texture FBO rendering
     GLfloat rect[12] = {
             -1, -1,
              1, -1,
              1,  1,
             -1, -1,
              1,  1,
-            -1, 1};
+            -1,  1};
     glGenBuffers(1, &rect_buf);
     glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
     glBufferData(GL_ARRAY_BUFFER, 12*sizeof(rect[0]),
@@ -461,13 +459,12 @@ void Ship::MakeTextures()
 
         // Floats are 4-byte-aligned.
         glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        GLfloat* const pos = new GLfloat[width*height*3];
+        GLfloat* const pos = new GLfloat[(width+1)*(height+1)*2];
         size_t i=0;
-        for (size_t y=0; y < height; ++y) {
-            for (size_t x=0; x < width; ++x) {
+        for (size_t y=0; y <= height; ++y) {
+            for (size_t x=0; x <= width; ++x) {
                 pos[i++] = x;//+ ((rand() % 100) - 50) / 200.;
                 pos[i++] = y;// + ((rand() % 100) - 50) / 200.;
-                pos[i++] = 0;
             }
         }
 
@@ -476,8 +473,8 @@ void Ship::MakeTextures()
         {
             glGenTextures(1, t);
             glBindTexture(GL_TEXTURE_2D, *t);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F_ARB, width, height,
-                    0, GL_RGB, GL_FLOAT, pos);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, width+1, height+1,
+                    0, GL_RG, GL_FLOAT, pos);
             SetTextureDefaults();
         }
         delete [] pos;
@@ -488,8 +485,8 @@ void Ship::MakeTextures()
 
         // Floats are 4-byte-aligned.
         glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        GLfloat* const empty = new GLfloat[width*height*3];
-        for (size_t i=0; i < width*height*3; i++)   empty[i] = 0;
+        GLfloat* const empty = new GLfloat[(width+1)*(height+1)*2];
+        for (size_t i=0; i < (width+1)*(height+1)*2; i++)   empty[i] = 0;
 
         GLuint* textures[] = {&vel_tex[0], &vel_tex[1],
                               &dvel_tex[0], &dvel_tex[1],
@@ -500,8 +497,8 @@ void Ship::MakeTextures()
         for (auto t: textures) {
             glGenTextures(1, t);
             glBindTexture(GL_TEXTURE_2D, *t);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F_ARB, width, height,
-                    0, GL_RGB, GL_FLOAT, empty);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, width+1, height+1,
+                    0, GL_RG, GL_FLOAT, empty);
             SetTextureDefaults();
         }
         delete [] empty;
