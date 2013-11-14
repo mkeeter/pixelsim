@@ -158,11 +158,11 @@ void Ship::ApplyVelocity(const float dt, const int source)
 void Ship::Update(const float dt, const int steps)
 {
 #if 1
-    float tex[width*height*3];
+    float tex[(width+1)*(height+1)*3];
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
     std::cout << "Positions:\n";
-    for (int i=0; i < width*height*3; i += 3)
+    for (int i=0; i < (width+1)*(height+1)*3; i += 3)
     {
         std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
     }
@@ -170,7 +170,7 @@ void Ship::Update(const float dt, const int steps)
     glBindTexture(GL_TEXTURE_2D, vel_tex[tick]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
     std::cout << "Velocities:\n";
-    for (int i=0; i < width*height*3; i += 3)
+    for (int i=0; i < (width+1)*(height+1)*3; i += 3)
     {
         std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
     }
@@ -179,7 +179,7 @@ void Ship::Update(const float dt, const int steps)
     glBindTexture(GL_TEXTURE_2D, dvel_tex[0]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
     std::cout << "Accelerations:\n";
-    for (int i=0; i < width*height*3; i += 3)
+    for (int i=0; i < (width+1)*(height+1)*3; i += 3)
     {
         std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
     }
