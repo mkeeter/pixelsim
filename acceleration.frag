@@ -1,7 +1,5 @@
 #version 120
 
-#define M_PI 3.1415926535
-
 ////////////////////////////////////////////////////////////////////////////////
 
 varying vec2 tex_coord;
@@ -12,77 +10,47 @@ uniform sampler2D filled;
 
 uniform ivec2 ship_size;
 
-uniform float k_linear;     // linear spring constant
-uniform float k_torsional;  // angular spring constant
-
-uniform float c_linear;     // linear damping
-uniform float c_torsional;  // torsional damping
+uniform float k;     // linear spring constant
+uniform float c;     // linear damping
 
 uniform float m;    // point's mass
 uniform float I;    // point's inertia
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Wraps an angle to the range -pi, pi
-float wrap(float angle)
+vec2 accel(vec2 a, vec2 a_dot, vec2 d,
+           vec2 b, vec2 b_dot)
 {
-    return mod(angle + M_PI, 2.0f*M_PI) - M_PI;
-}
-
-vec3 accel(vec3 a, vec3 a_dot, vec3 d,
-           vec3 b, vec3 b_dot)
-{
-    vec3 v  = vec3(b.xy - a.xy, atan(b.y - a.y, b.x - a.x));
-    vec3 v_ = vec3(normalize(v.xy), v.z);
-    vec3 p_ = vec3(-v_.y, v_.x, v_.z + M_PI/2.0f);
+    vec2 v  = b.xy - a.xy;
+    vec2 v_ = normalize(v.xy);
 
     // Force from linear spring
-    vec2 F_kL = vec2(
-            -k_linear * (length(d.xy) - length(v.xy)) * v_.xy);
-
-    // Torque from near torsional spring
-    float T_k = -k_torsional * wrap(d.z + a.z - v.z);
-
-    // Force from far torsional spring
-    vec2 F_kT = vec2(
-            -p_.xy * k_torsional * length(v.xy) * wrap(d.z + b.z - v.z));
+    vec2 F_kL = -k * (length(d.xy) - length(v.xy)) * v_.xy;
 
     // Force from linear damper (check this!)
-    vec2 F_cL = vec2(
-            v_.xy * c_linear * dot(b_dot.xy - a_dot.xy, v_.xy));
+    vec2 F_cL = v_.xy * c * dot(b_dot.xy - a_dot.xy, v_.xy);
 
-    // Torque from near torsional damper
-    float T_c =
-            -c_torsional *
-            (a_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy));
+    vec2 force = F_kL + F_cL;
 
-    // Force from far torsional damper
-    vec2 F_cT =
-            -p_.xy * c_torsional * length(v.xy) *
-            (b_dot.z - dot(b_dot.xy - a_dot.xy, p_.xy) / length(v.xy));
-
-    vec2 force = F_kL + F_kT + F_cL + F_cT;
-    float torque = T_k + T_c;
-
-    return vec3(force / m, torque / I);
+    return force / m;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void main()
 {
-    vec3 near_pos = texture2D(pos, tex_coord).xyz;
-    vec3 near_vel = texture2D(vel, tex_coord).xyz;
+    vec2 near_pos = texture2D(pos, tex_coord).xy;
+    vec2 near_vel = texture2D(vel, tex_coord).xy;
 
-    vec3 total_accel = vec3(0.0f);
+    vec2 total_accel = vec2(0.0f);
 
     // Iterate over the nine neighboring cells, accumulating forces.
     for (int dx=-1; dx <= 1; ++dx) {
         for (int dy=-1; dy <= 1; ++dy) {
             // Find the texture coordinate of the far pixel's data
             vec2 far_tex_coord = tex_coord +
-                                 vec2(float(dx) / float(ship_size.x),
-                                      float(dy) / float(ship_size.y));
+                                 vec2(float(dx) / float(ship_size.x + 2),
+                                      float(dy) / float(ship_size.y + 2));
             // If the chosen pixel is within the image (i.e. it has texture
             // coordinates between 0 and 1) and is marked as filled in the
             // pixel occupancy texture, then find and add its acceleration.
@@ -92,12 +60,11 @@ void main()
                 texture2D(filled, far_tex_coord).r != 0)
             {
                 // Get the actual state of the far point from the textures
-                vec3 far_pos = texture2D(pos, far_tex_coord).xyz;
-                vec3 far_vel = texture2D(vel, far_tex_coord).xyz;
+                vec2 far_pos = texture2D(pos, far_tex_coord).xy;
+                vec2 far_vel = texture2D(vel, far_tex_coord).xy;
 
                 // Find the nominal offset and angle between the points.
-                vec3 delta = vec3(float(dx), float(dy),
-                                  atan(float(dy), float(dx)));
+                vec2 delta = vec2(float(dx), float(dy));
 
                 total_accel += accel(near_pos, near_vel, delta,
                                      far_pos, far_vel);
@@ -108,5 +75,5 @@ void main()
     // Accelerate engine pixels upwards
     //if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
 
-    gl_FragColor = vec4(total_accel, 1.0f);
+    gl_FragColor = vec4(total_accel, 0.0f, 1.0f);
 }
