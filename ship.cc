@@ -306,7 +306,7 @@ void Ship::RenderToFBO(const GLuint program, const GLuint tex)
                            GL_TEXTURE_2D, tex, 0);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, width+1, height+1);
 
     // Load triangles that draw a flat rectangle from -1, -1, to 1, 1
     glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
@@ -426,8 +426,9 @@ void Ship::MakeTextures()
     {   // Load a byte-map recording occupancy
         // Bytes are byte-aligned, so set unpack alignment to 1
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        GLubyte* const filled = new GLubyte[width*height];
-        size_t i=0;
+        GLubyte* const filled = new GLubyte[(width+1)*(height+1)];
+        memset(filled, 0, sizeof(GLubyte)*(width+1)*(height+1));
+
         for (size_t y=0; y < height; ++y) {
             for (size_t x=0; x < width; ++x) {
                 // Get the pixel's address in the data array:
@@ -440,9 +441,18 @@ void Ship::MakeTextures()
                 const bool pixel_engine = filled && pixel[0] == 255 &&
                                           pixel[1] == 0  && pixel[2] == 0;
 
-                if (pixel_engine)           filled[i++] = 255;
-                else if (pixel_filled)      filled[i++] = 128;
-                else                        filled[i++] = 0;
+                const size_t indices[] = {
+                        y*width + x, (y+1)*width + x,
+                        y*width + x + 1, (y+1)*width + x + 1};
+
+                for (size_t i : indices) {
+                    if (filled[i]) {
+                        if (pixel_engine || pixel_filled)   filled[i] = 128;
+                    } else {
+                        if (pixel_engine)       filled[i] = 255;
+                        else if (pixel_filled)  filled[i] = 128;
+                    }
+                }
             }
         }
         glGenTextures(1, &filled_tex);
