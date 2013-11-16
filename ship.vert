@@ -1,9 +1,9 @@
-#version 120
+#version 330
 
-attribute vec2  vertex_position;
+layout (location=0) in vec2 vertex_position;
+layout (location=0) in vec3 color_in;
 
-attribute vec3  color_in;
-varying   vec3  color_out;
+flat out vec3 color_out;
 
 uniform  ivec2  window_size;
 uniform  ivec2  ship_size;

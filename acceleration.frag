@@ -1,8 +1,8 @@
-#version 120
+#version 330
 
 ////////////////////////////////////////////////////////////////////////////////
 
-varying vec2 tex_coord;
+smooth in vec2 tex_coord;
 
 uniform sampler2D pos;
 uniform sampler2D vel;
@@ -15,6 +15,8 @@ uniform float c;     // linear damping
 
 uniform float m;    // point's mass
 uniform float I;    // point's inertia
+
+out vec4 fragColor;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -73,7 +75,7 @@ void main()
     }
 
     // Accelerate engine pixels upwards
-    //if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec3(0.0f, 1000.0f, 0.0f);
+    if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec2(0.0f, 1000.0f);
 
-    gl_FragColor = vec4(total_accel, 0.0f, 1.0f);
+    fragColor = vec4(total_accel, 0.0f, 1.0f);
 }

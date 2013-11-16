@@ -1,7 +1,8 @@
-#version 120
+#version 330
 
-attribute vec2 vertex_position;
-varying vec2 tex_coord;
+layout (location=0) vec2 vertex_position;
+
+smooth out vec2 tex_coord;
 
 // Expects to get a rectangle from -1, -1 to 1, 1
 // Outputs a normalized texture coordinate from 0 to 1.

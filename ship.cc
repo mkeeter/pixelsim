@@ -71,19 +71,9 @@ void Ship::GetAcceleration(const int source, const int accel_out)
 
     // Load various uniform values
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
-    /*
-    glUniform1f(glGetUniformLocation(program, "k_linear"), 5000.0f);
-    glUniform1f(glGetUniformLocation(program, "k_torsional"), 5000.0f);
-    glUniform1f(glGetUniformLocation(program, "c_linear"), 500.0f);
-    glUniform1f(glGetUniformLocation(program, "c_torsional"), 500.0f);
-    glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
-    glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
-    */
 
-    glUniform1f(glGetUniformLocation(program, "k_linear"), 100.0f);
-    glUniform1f(glGetUniformLocation(program, "k_torsional"), 100.0f);
-    glUniform1f(glGetUniformLocation(program, "c_linear"), 500.0f);
-    glUniform1f(glGetUniformLocation(program, "c_torsional"), 500.0f);
+    glUniform1f(glGetUniformLocation(program, "k"), 10000.0f);
+    glUniform1f(glGetUniformLocation(program, "c"), 100.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
 
@@ -157,7 +147,7 @@ void Ship::ApplyVelocity(const float dt, const int source)
 
 void Ship::Update(const float dt, const int steps)
 {
-#if 1
+#if 0
     float tex[(width+1)*(height+1)*3];
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
@@ -446,11 +436,11 @@ void Ship::MakeTextures()
                         y*width + x + 1, (y+1)*width + x + 1};
 
                 for (size_t i : indices) {
-                    if (filled[i]) {
-                        if (pixel_engine || pixel_filled)   filled[i] = 128;
-                    } else {
+                    if (!filled[i]) {
                         if (pixel_engine)       filled[i] = 255;
                         else if (pixel_filled)  filled[i] = 128;
+                    } else if (filled[i] == 255 && !pixel_engine) {
+                        filled[i] = 128;
                     }
                 }
             }
@@ -473,8 +463,8 @@ void Ship::MakeTextures()
         size_t i=0;
         for (size_t y=0; y <= height; ++y) {
             for (size_t x=0; x <= width; ++x) {
-                pos[i++] = x;//+ ((rand() % 100) - 50) / 200.;
-                pos[i++] = y;// + ((rand() % 100) - 50) / 200.;
+                pos[i++] = x+ ((rand() % 100) - 50) / 200.;
+                pos[i++] = y + ((rand() % 100) - 50) / 200.;
             }
         }
 

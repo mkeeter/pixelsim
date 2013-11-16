@@ -30,25 +30,6 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool check_extensions()
-{
-    // Make sure that all of the extensions we need are supported
-    std::string extensions[] = {
-        "GL_ARB_framebuffer_object",
-        "GL_ARB_texture_rg", // Used for GL_R8 internal texture format
-        "GL_ARB_texture_float"};
-    for (auto s : extensions) {
-        if (!glfwExtensionSupported(s.c_str()))
-        {
-            std::cerr << s << " not supported!" << std::endl;
-            return false;
-        }
-    }
-    return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 int main(int argc, char** argv)
 {
     if (argc != 2) {
@@ -58,7 +39,12 @@ int main(int argc, char** argv)
 
     // Initialize the library
     if (!glfwInit())    return -1;
+
     glfwWindowHint(GLFW_SAMPLES, 0);    // multisampling!
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Create a windowed mode window and its OpenGL context
     WindowSize window_size(640, 480);
@@ -74,12 +60,6 @@ int main(int argc, char** argv)
 
     // Make the window's context current
     glfwMakeContextCurrent(window);
-
-    // Check that all of the required extensions exist.
-    if (!check_extensions()) {
-        glfwTerminate();
-        return -1;
-    }
 
     // Use a callback to update glViewport when the window is resized, by
     // saving a pointer to a WindowSize struct in the window's user pointer
@@ -98,7 +78,7 @@ int main(int argc, char** argv)
         const auto t0 = std::chrono::high_resolution_clock::now();
 
         // Update the ship
-        ship.Update(0.10f/60, 5);
+        ship.Update(1.0f/60, 5);
 
         // Draw the scene
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
