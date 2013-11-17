@@ -1,9 +1,9 @@
 #version 330
 
-layout (location = 0) in vec2 vertex_position;
-layout (location = 1) in vec3 color_in;
+layout(location=0) in vec2 vertex_position;
+layout(location=1) in vec3 color_in;
 
-flat out vec3 color_out;
+flat out vec4 color_out;
 
 uniform  ivec2  window_size;
 uniform  ivec2  ship_size;
@@ -12,7 +12,7 @@ uniform sampler2D pos;
 
 void main()
 {
-    color_out = color_in;
+    color_out = vec4(color_in, 1.0f);
 
     vec2 xy = texture(pos, vec2(
         (vertex_position.x + 1.0f) / float(ship_size.x + 2),

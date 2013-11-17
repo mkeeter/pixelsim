@@ -237,23 +237,18 @@ void Ship::GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt)
 
 void Ship::Draw(const int window_width, const int window_height) const
 {
-#if 1
     glViewport(0, 0, window_width, window_height);
-
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     const GLuint program = Shaders::ship;
     glUseProgram(program);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buf);
-    const GLint v = glGetAttribLocation(program, "vertex_position");
-    glEnableVertexAttribArray(v);
-    glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, color_buf);
-    const GLint c = glGetAttribLocation(program, "color_in");
-    glEnableVertexAttribArray(c);
-    glVertexAttribPointer(c, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3*sizeof(GLbyte), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3*sizeof(GLbyte), 0);
 
     const GLint w = glGetUniformLocation(program, "window_size");
     glUniform2i(w, window_width, window_height);
@@ -266,24 +261,6 @@ void Ship::Draw(const int window_width, const int window_height) const
     glUniform1i(glGetUniformLocation(program, "pos"), 0);
 
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
-#else
-
-    glViewport(0, 0, width, height);
-    GLuint program = Shaders::neighbors;
-    glUseProgram(program);
-
-    const GLint s = glGetUniformLocation(program, "ship_size");
-    glUniform2i(s, width, height);
-
-    // Load triangles that draw a flat rectangle from -1, -1, to 1, 1
-    glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
-    const GLint v = glGetAttribLocation(program, "vertex_position");
-    glEnableVertexAttribArray(v);
-    glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
-
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-#endif
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -300,9 +277,8 @@ void Ship::RenderToFBO(const GLuint program, const GLuint tex)
 
     // Load triangles that draw a flat rectangle from -1, -1, to 1, 1
     glBindBuffer(GL_ARRAY_BUFFER, rect_buf);
-    const GLint v = glGetAttribLocation(program, "vertex_position");
-    glEnableVertexAttribArray(v);
-    glVertexAttribPointer(v, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 
     // Draw the full rectangle into the FBO
     glDrawArrays(GL_TRIANGLES, 0, 6);
