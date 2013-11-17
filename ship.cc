@@ -7,8 +7,8 @@
 
 #include <png.h>
 
+#define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
-#include <OpenGL/glext.h>
 
 #include "ship.h"
 #include "shaders.h"
@@ -20,7 +20,8 @@ Ship::Ship(const std::string& imagename)
     LoadImage(imagename);
     MakeTextures();
     MakeBuffers();
-    MakeFramebuffers();
+    MakeFramebuffer();
+    MakeVertexArray();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +42,7 @@ Ship::~Ship()
     for (auto t : textures)     glDeleteTextures(1, t);
 
     glDeleteFramebuffers(1, &fbo);
+    glDeleteVertexArrays(1, &vao);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -250,11 +252,11 @@ void Ship::Draw(const int window_width, const int window_height) const
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_UNSIGNED_BYTE, GL_TRUE, 3*sizeof(GLbyte), 0);
 
-    const GLint w = glGetUniformLocation(program, "window_size");
-    glUniform2i(w, window_width, window_height);
+    glUniform2i(glGetUniformLocation(program, "window_size"),
+                window_width, window_height);
 
-    const GLint s = glGetUniformLocation(program, "ship_size");
-    glUniform2i(s, width, height);
+    glUniform2i(glGetUniformLocation(program, "ship_size"),
+                width, height);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
@@ -481,9 +483,15 @@ void Ship::MakeTextures()
     }
 }
 
-void Ship::MakeFramebuffers()
+void Ship::MakeFramebuffer()
 {
     glGenFramebuffers(1, &fbo);
+}
+
+void Ship::MakeVertexArray()
+{
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao); // we'll use this VAO all the time
 }
 
 void Ship::SetTextureDefaults() const

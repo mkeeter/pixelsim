@@ -5,9 +5,8 @@ layout(location=1) in vec3 color_in;
 
 flat out vec4 color_out;
 
-uniform  ivec2  window_size;
-uniform  ivec2  ship_size;
-
+uniform ivec2  window_size;
+uniform ivec2  ship_size;
 uniform sampler2D pos;
 
 void main()

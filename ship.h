@@ -16,7 +16,8 @@ private:
     void MakeBuffers();
     void LoadImage(const std::string& imagename);
     void MakeTextures();
-    void MakeFramebuffers();
+    void MakeFramebuffer();
+    void MakeVertexArray();
 
     void SetTextureDefaults() const;
 
@@ -71,6 +72,9 @@ private:
 
     // Frame-buffer object
     GLuint fbo;
+
+    // Vertex array object
+    GLuint vao;
 };
 
 #endif

@@ -24,8 +24,6 @@ void window_size_callback(GLFWwindow* window, int width, int height)
             glfwGetWindowUserPointer(window));
     ws->width = width;
     ws->height = height;
-
-    glViewport(0, 0, width, height);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +63,11 @@ int main(int argc, char** argv)
     // saving a pointer to a WindowSize struct in the window's user pointer
     // field.
     glfwSetWindowUserPointer(window, static_cast<void*>(&window_size));
-    glfwSetWindowSizeCallback(window, window_size_callback);
+    glfwSetFramebufferSizeCallback(window, window_size_callback);
+
+    // Get the actual framebuffer size (so that it works properly on
+    // retina displays, rather than only filling 1/4 of the window)
+    glfwGetFramebufferSize(window, &window_size.width, &window_size.height);
 
     // Initialize the ship!
     Ship ship(argv[1]);
