@@ -59,7 +59,7 @@ GLuint Shaders::CompileShader(const std::string& filename)
 
         std::cerr << "Compile failure in "
                   << (type == GL_VERTEX_SHADER ? "vertex" : "fragment")
-                  << " shader:\n" << strInfoLog << std::endl;
+                  << " shader (" << filename << "):\n" << strInfoLog << std::endl;
         delete [] strInfoLog;
     }
 

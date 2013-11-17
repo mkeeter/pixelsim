@@ -41,8 +41,8 @@ vec2 accel(vec2 a, vec2 a_dot, vec2 d,
 
 void main()
 {
-    vec2 near_pos = texture2D(pos, tex_coord).xy;
-    vec2 near_vel = texture2D(vel, tex_coord).xy;
+    vec2 near_pos = texture(pos, tex_coord).xy;
+    vec2 near_vel = texture(vel, tex_coord).xy;
 
     vec2 total_accel = vec2(0.0f);
 
@@ -59,11 +59,11 @@ void main()
             if (far_tex_coord.x > 0.0f && far_tex_coord.x < 1.0f &&
                 far_tex_coord.y > 0.0f && far_tex_coord.y < 1.0f &&
                 (dx != 0 || dy != 0) &&
-                texture2D(filled, far_tex_coord).r != 0)
+                texture(filled, far_tex_coord).r != 0)
             {
                 // Get the actual state of the far point from the textures
-                vec2 far_pos = texture2D(pos, far_tex_coord).xy;
-                vec2 far_vel = texture2D(vel, far_tex_coord).xy;
+                vec2 far_pos = texture(pos, far_tex_coord).xy;
+                vec2 far_vel = texture(vel, far_tex_coord).xy;
 
                 // Find the nominal offset and angle between the points.
                 vec2 delta = vec2(float(dx), float(dy));
@@ -75,7 +75,7 @@ void main()
     }
 
     // Accelerate engine pixels upwards
-    if (texture2D(filled, tex_coord).r == 1.0f)   total_accel += vec2(0.0f, 1000.0f);
+    if (texture(filled, tex_coord).r == 1.0f)   total_accel += vec2(0.0f, 1000.0f);
 
     fragColor = vec4(total_accel, 0.0f, 1.0f);
 }

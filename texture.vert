@@ -1,6 +1,6 @@
 #version 330
 
-layout (location=0) vec2 vertex_position;
+layout (location = 0) in vec2 vertex_position;
 
 smooth out vec2 tex_coord;
 

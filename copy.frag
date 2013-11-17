@@ -2,11 +2,11 @@
 
 smooth in vec2 tex_coord;
 
-uniform sampler2D texture;
+uniform sampler2D tex;
 
 out vec4 fragColor;
 
 void main()
 {
-    fragColor = texture2D(texture, tex_coord);
+    fragColor = texture(tex, tex_coord);
 }

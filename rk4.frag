@@ -1,4 +1,4 @@
-#version 120
+#version 330
 
 smooth in vec2 tex_coord;
 uniform sampler2D y;
@@ -15,9 +15,9 @@ out vec4 fragColor;
 void main()
 {
     fragColor = vec4(
-            texture2D(y, tex_coord).xyz + dt/6.0f * (
-                texture2D(k1, tex_coord).xyz +
-                2*texture2D(k2, tex_coord).xyz +
-                2*texture2D(k3, tex_coord).xyz +
-                texture2D(k4, tex_coord).xyz), 0.0f);
+            texture(y, tex_coord).xyz + dt/6.0f * (
+                texture(k1, tex_coord).xyz +
+                2*texture(k2, tex_coord).xyz +
+                2*texture(k3, tex_coord).xyz +
+                texture(k4, tex_coord).xyz), 0.0f);
 }

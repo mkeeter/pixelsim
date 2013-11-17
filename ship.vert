@@ -1,7 +1,7 @@
 #version 330
 
-layout (location=0) in vec2 vertex_position;
-layout (location=0) in vec3 color_in;
+layout (location = 0) in vec2 vertex_position;
+layout (location = 1) in vec3 color_in;
 
 flat out vec3 color_out;
 
@@ -14,7 +14,7 @@ void main()
 {
     color_out = color_in;
 
-    vec2 xy = texture2D(pos, vec2(
+    vec2 xy = texture(pos, vec2(
         (vertex_position.x + 1.0f) / float(ship_size.x + 2),
         (vertex_position.y + 1.0f) / float(ship_size.y + 2))).xy;
 
