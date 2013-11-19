@@ -42,6 +42,12 @@ void main()
     vec2 tex_coord = vec2(gl_FragCoord.x / float(ship_size.x + 1),
                           gl_FragCoord.y / float(ship_size.y + 1));
 
+    if (texture(filled, tex_coord).r == 0)
+    {
+        fragColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        return;
+    }
+
     vec2 near_pos = texture(pos, tex_coord).xy;
     vec2 near_vel = texture(vel, tex_coord).xy;
 
