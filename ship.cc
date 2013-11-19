@@ -418,7 +418,7 @@ void Ship::MakeTextures()
                     if (!filled[i]) {
                         if (pixel_engine)       filled[i] = 255;
                         else if (pixel_filled)  filled[i] = 128;
-                    } else if (filled[i] == 255 && !pixel_engine) {
+                    } else if (filled[i] == 255 && pixel_filled && !pixel_engine) {
                         filled[i] = 128;
                     }
                 }
