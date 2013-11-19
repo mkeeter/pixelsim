@@ -91,6 +91,9 @@ void Ship::GetVelocity(const int source, const int vel_out)
     glBindTexture(GL_TEXTURE_2D, vel_tex[source]);
     glUniform1i(glGetUniformLocation(program, "texture"), 0);
 
+    // Set the texture size
+    glUniform2i(glGetUniformLocation(program, "size"), width, height);
+
     RenderToFBO(program, dpos_tex[vel_out]);
 }
 
@@ -121,6 +124,9 @@ void Ship::ApplyAcceleration(const float dt, const int source)
     // Set time-step value
     glUniform1f(glGetUniformLocation(program, "dt"), dt);
 
+    // Set the texture size
+    glUniform2i(glGetUniformLocation(program, "size"), width, height);
+
     RenderToFBO(program, vel_tex[!tick]);
 }
 
@@ -141,6 +147,9 @@ void Ship::ApplyVelocity(const float dt, const int source)
 
     // Set time-step value
     glUniform1f(glGetUniformLocation(program, "dt"), dt);
+
+    // Set the texture size
+    glUniform2i(glGetUniformLocation(program, "size"), width, height);
 
     RenderToFBO(program, pos_tex[!tick]);
 }
@@ -249,6 +258,9 @@ void Ship::GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt)
     glUniform1i(glGetUniformLocation(program, "k4"), 4);
 
     glUniform1f(glGetUniformLocation(program, "dt"), dt);
+
+    // Set the texture size
+    glUniform2i(glGetUniformLocation(program, "size"), width, height);
 
     RenderToFBO(program, state[!tick]);
 }
