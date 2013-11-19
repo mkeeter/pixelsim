@@ -410,8 +410,9 @@ void Ship::MakeTextures()
                                           pixel[1] == 0  && pixel[2] == 0;
 
                 const size_t indices[] = {
-                        y*width + x, (y+1)*width + x,
-                        y*width + x + 1, (y+1)*width + x + 1};
+                        y*(width+1) + x, (y+1)*(width+1) + x,
+                        y*(width+1) + x + 1, (y+1)*(width+1) + x + 1};
+
 
                 for (size_t i : indices) {
                     if (!filled[i]) {
@@ -425,7 +426,7 @@ void Ship::MakeTextures()
         }
         glGenTextures(1, &filled_tex);
         glBindTexture(GL_TEXTURE_2D, filled_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height,
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width+1, height+1,
                      0, GL_RED, GL_UNSIGNED_BYTE, filled);
         SetTextureDefaults();
         delete [] filled;
