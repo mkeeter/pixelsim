@@ -74,7 +74,7 @@ void Ship::GetAcceleration(const int source, const int accel_out)
     // Load various uniform values
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
 
-    glUniform1f(glGetUniformLocation(program, "k"), 10000.0f);
+    glUniform1f(glGetUniformLocation(program, "k"), 100000.0f);
     glUniform1f(glGetUniformLocation(program, "c"), 100.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
