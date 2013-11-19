@@ -2,8 +2,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-smooth in vec2 tex_coord;
-
 uniform sampler2D pos;
 uniform sampler2D vel;
 uniform sampler2D filled;
@@ -41,6 +39,9 @@ vec2 accel(vec2 a, vec2 a_dot, vec2 d,
 
 void main()
 {
+    vec2 tex_coord = vec2(gl_FragCoord.x / float(ship_size.x + 1),
+                          gl_FragCoord.y / float(ship_size.y + 1));
+
     vec2 near_pos = texture(pos, tex_coord).xy;
     vec2 near_vel = texture(vel, tex_coord).xy;
 
