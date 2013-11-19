@@ -147,24 +147,35 @@ void Ship::ApplyVelocity(const float dt, const int source)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Ship::Update(const float dt, const int steps)
+void Ship::PrintTextureValues()
 {
-#if 0
     float tex[(width+1)*(height+1)*3];
+
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
     std::cout << "Positions:\n";
     for (int i=0; i < (width+1)*(height+1)*3; i += 3)
     {
-        std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
+        std::cout << tex[i] << ',' << tex[i+1]  << "    ";
     }
     std::cout << std::endl;
+
+    GLubyte filled[(width+1)*(height+1)*3];
+    glBindTexture(GL_TEXTURE_2D, filled_tex);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, &filled);
+    std::cout << "Filled:\n";
+    for (int i=0; i < (width+1)*(height+1); i++)
+    {
+        std::cout << int(filled[i]) << "    ";
+    }
+    std::cout << std::endl;
+
     glBindTexture(GL_TEXTURE_2D, vel_tex[tick]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
     std::cout << "Velocities:\n";
     for (int i=0; i < (width+1)*(height+1)*3; i += 3)
     {
-        std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
+        std::cout << tex[i] << ',' << tex[i+1]  << "    ";
     }
     std::cout << std::endl;
     GetDerivatives(tick, 0);
@@ -173,10 +184,17 @@ void Ship::Update(const float dt, const int steps)
     std::cout << "Accelerations:\n";
     for (int i=0; i < (width+1)*(height+1)*3; i += 3)
     {
-        std::cout << tex[i] << ',' << tex[i+1] << ',' << tex[i+2] << "    ";
+        std::cout << tex[i] << ',' << tex[i+1]  << "    ";
     }
     std::cout << std::endl << std::endl;
-#endif
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Ship::Update(const float dt, const int steps)
+{
+    //PrintTextureValues();
 
     const float dt_ = dt / steps;
     for (int i=0; i < steps; ++i) {

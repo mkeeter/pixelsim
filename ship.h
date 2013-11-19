@@ -47,6 +47,8 @@ private:
 
     void RenderToFBO(const GLuint program, const GLuint tex);
 
+    void PrintTextureValues();
+
     size_t width;
     size_t height;
     uint8_t* data;
