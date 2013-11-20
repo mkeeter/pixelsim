@@ -335,6 +335,19 @@ void Ship::LoadImage(const std::string& imagename)
     png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
     fclose(input);
 
+    if (png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGB_ALPHA)
+    {
+        std::cerr << "[pixelsim]    Error: Image must have alpha channel."
+                  << std::endl;
+        exit(-1);
+    }
+    else if (png_get_bit_depth(png_ptr, info_ptr) != 8)
+    {
+        std::cerr << "[pixelsim]    Error: Image must have 8-bit depth."
+                  << std::endl;
+        exit(-1);
+    }
+
     width = png_get_image_width(png_ptr, info_ptr);
     height = png_get_image_height(png_ptr, info_ptr);
 
