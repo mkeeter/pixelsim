@@ -18,11 +18,11 @@ struct WindowSize
 
 struct State
 {
-    State(WindowSize* ws) :
-        window_size(ws), up_pressed(false) {}
+    State(WindowSize* ws, Ship* s) :
+        window_size(ws), ship(s) {}
 
     WindowSize* window_size;
-    bool up_pressed;
+    Ship*       ship;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,8 +37,16 @@ void resize_callback(GLFWwindow* window, int width, int height)
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    Ship* ship = static_cast<State*>(
+            glfwGetWindowUserPointer(window))->ship;
+
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+    if (key == GLFW_KEY_UP)
+    {
+        if (action == GLFW_PRESS)           ship->BoostOn();
+        else if (action == GLFW_RELEASE)    ship->BoostOff();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +133,6 @@ void GetArgs(int argc, char** argv,
 int main(int argc, char** argv)
 {
     WindowSize window_size(640, 480);
-    State state(&window_size);
 
     bool record = false;
     std::string filename;
@@ -154,6 +161,14 @@ int main(int argc, char** argv)
     // Make the window's context current
     glfwMakeContextCurrent(window);
 
+    // Initialize the ship!
+    Ship ship(filename);
+    Shaders::init();
+
+    // Store pointers to window and ship objects.  They will be
+    // modified by resize and key-press callbacks, respectively.
+    State state(&window_size, &ship);
+
     // Use a callback to update glViewport when the window is resized, by
     // saving a pointer to a WindowSize struct in the window's user pointer
     // field.
@@ -164,10 +179,6 @@ int main(int argc, char** argv)
     // Get the actual framebuffer size (so that it works properly on
     // retina displays, rather than only filling 1/4 of the window)
     glfwGetFramebufferSize(window, &window_size.width, &window_size.height);
-
-    // Initialize the ship!
-    Ship ship(filename);
-    Shaders::init();
 
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window))

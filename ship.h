@@ -10,6 +10,10 @@ class Ship
 public:
     Ship(const std::string& imagename);
     ~Ship();
+
+    void BoostOn()  { boost = true; }
+    void BoostOff() { boost = false; }
+
     void Update(const float dt=0.1, const int steps=5);
     void Draw(const int window_width, const int window_height) const;
 private:
@@ -77,6 +81,8 @@ private:
 
     // Vertex array object
     GLuint vao;
+
+    bool boost;
 };
 
 #endif

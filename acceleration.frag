@@ -14,6 +14,8 @@ uniform float c;     // linear damping
 uniform float m;    // point's mass
 uniform float I;    // point's inertia
 
+uniform int boost;
+
 out vec4 fragColor;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -82,7 +84,10 @@ void main()
     }
 
     // Accelerate engine pixels upwards
-    if (texture(filled, tex_coord).r == 1.0f)   total_accel += vec2(0.0f, 1000.0f);
+    if (boost != 0 && texture(filled, tex_coord).r == 1.0f)
+    {
+        total_accel += vec2(0.0f, 1000.0f);
+    }
 
     fragColor = vec4(total_accel, 0.0f, 1.0f);
 }

@@ -16,6 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 Ship::Ship(const std::string& imagename)
+    : boost(false)
 {
     LoadImage(imagename);
     MakeTextures();
@@ -78,6 +79,8 @@ void Ship::GetAcceleration(const int source, const int accel_out)
     glUniform1f(glGetUniformLocation(program, "c"), 100.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
+
+    glUniform1i(glGetUniformLocation(program, "boost"), boost);
 
     RenderToFBO(program, dvel_tex[accel_out]);
 }
@@ -291,6 +294,9 @@ void Ship::Draw(const int window_width, const int window_height) const
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
     glUniform1i(glGetUniformLocation(program, "pos"), 0);
+
+    // Pass in boost info to let us know if we should be drawing engine pixels.
+    glUniform1i(glGetUniformLocation(program, "boost"), boost);
 
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
 }
