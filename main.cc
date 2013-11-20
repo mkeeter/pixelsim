@@ -26,14 +26,91 @@ void window_size_callback(GLFWwindow* window, int width, int height)
     ws->height = height;
 }
 
+void GetArgs(int argc, char** argv,
+             std::string* filename, WindowSize* window_size, bool* record)
+{
+    if (argc < 2)
+    {
+        std::cout << "Usage: pixelsim [...] image.png" << std::endl;
+        exit(-1);
+    }
+
+    // The last argument is the target filename.
+    *filename = argv[--argc];
+    // Verify that it at least ends in ".png"
+    if (filename->rfind(".png") != filename->length() - 4)
+    {
+        std::cerr << "[pixelsim]    Error: Invalid image name '"
+                  << *filename << "'" << std::endl;
+        exit(-1);
+    }
+
+    // Attempt to open the file to verify that it exists.
+    FILE* input = fopen(filename->c_str(), "rb");
+    if (input == NULL)
+    {
+        std::cerr << "[pixelsim]    Error: Cannot open file '"
+                  << *filename << "'" << std::endl;
+        exit(-1);
+    }
+    fclose(input);
+
+
+    // Parse any other arguments that may have been provided.
+    for (int a=1; a < argc; ++a)
+    {
+        if (!strcmp(argv[a], "--size"))
+        {
+            if (++a >= argc)
+            {
+                std::cerr << "[pixelsim]    Error: No size provided!"
+                          << std::endl;
+                exit(-1);
+            }
+
+            const std::string size = argv[a];
+            const size_t x = size.find("x");
+            if (x == std::string::npos)
+            {
+                std::cerr << "[pixelsim]    Error: Invalid size specification '"
+                          << size << "'" << std::endl;
+                exit(-1);
+            }
+
+            const std::string w = size.substr(0, x);
+            const std::string h = size.substr(x + 1, size.size() - x - 1);
+
+            window_size->width = std::atoi(w.c_str());
+            window_size->height = std::atoi(h.c_str());
+
+            if (window_size->height == 0 || window_size->width == 0)
+            {
+                std::cerr << "[pixelsim]    Error: Invalid size specification '"
+                          << size << "'" << std::endl;
+                exit(-1);
+            }
+        }
+        else if (!strcmp(argv[a], "--record"))
+        {
+            *record = true;
+        }
+        else
+        {
+            std::cerr << "[pixelsim]    Error: Unrecognized argument '"
+                      << argv[a] << "'" << std::endl;
+            exit(-1);
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)
 {
-    if (argc != 2) {
-        std::cout << "Usage: pixelFEM imagename.png" << std::endl;
-        exit(-1);
-    }
+    WindowSize window_size(640, 480);
+    bool record = false;
+    std::string filename;
+    GetArgs(argc, argv, &filename, &window_size, &record);
 
     // Initialize the library
     if (!glfwInit())    return -1;
@@ -70,7 +147,7 @@ int main(int argc, char** argv)
     glfwGetFramebufferSize(window, &window_size.width, &window_size.height);
 
     // Initialize the ship!
-    Ship ship(argv[1]);
+    Ship ship(filename);
     Shaders::init();
 
     // Loop until the user closes the window
