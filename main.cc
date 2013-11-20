@@ -122,13 +122,12 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Create a windowed mode window and its OpenGL context
-    WindowSize window_size(640, 480);
     GLFWwindow* const window = glfwCreateWindow(
-            window_size.width, window_size.height, "pixelFEM", NULL, NULL);
+            window_size.width, window_size.height, "pixelsim", NULL, NULL);
 
     if (!window)
     {
-        std::cerr << "Failed to create window!" << std::endl;
+        std::cerr << "[pixelsim]    Error: failed to create window!" << std::endl;
         glfwTerminate();
         return -1;
     }
