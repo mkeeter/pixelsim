@@ -16,15 +16,32 @@ struct WindowSize
     int width, height;
 };
 
+struct State
+{
+    State(WindowSize* ws) :
+        window_size(ws), up_pressed(false) {}
+
+    WindowSize* window_size;
+    bool up_pressed;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
-void window_size_callback(GLFWwindow* window, int width, int height)
+void resize_callback(GLFWwindow* window, int width, int height)
 {
-    WindowSize* ws = static_cast<WindowSize*>(
-            glfwGetWindowUserPointer(window));
+    WindowSize* ws = static_cast<State*>(
+            glfwGetWindowUserPointer(window))->window_size;
     ws->width = width;
     ws->height = height;
 }
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 void GetArgs(int argc, char** argv,
              std::string* filename, WindowSize* window_size, bool* record)
@@ -108,6 +125,8 @@ void GetArgs(int argc, char** argv,
 int main(int argc, char** argv)
 {
     WindowSize window_size(640, 480);
+    State state(&window_size);
+
     bool record = false;
     std::string filename;
     GetArgs(argc, argv, &filename, &window_size, &record);
@@ -138,8 +157,9 @@ int main(int argc, char** argv)
     // Use a callback to update glViewport when the window is resized, by
     // saving a pointer to a WindowSize struct in the window's user pointer
     // field.
-    glfwSetWindowUserPointer(window, static_cast<void*>(&window_size));
-    glfwSetFramebufferSizeCallback(window, window_size_callback);
+    glfwSetWindowUserPointer(window, static_cast<void*>(&state));
+    glfwSetFramebufferSizeCallback(window, resize_callback);
+    glfwSetKeyCallback(window, key_callback);
 
     // Get the actual framebuffer size (so that it works properly on
     // retina displays, rather than only filling 1/4 of the window)
