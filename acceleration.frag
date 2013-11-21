@@ -36,9 +36,7 @@ vec2 accel(vec2 a, vec2 a_dot, vec2 d,
     // Force from linear damper (check this!)
     vec2 F_cL = v_.xy * c * dot(b_dot.xy - a_dot.xy, v_.xy);
 
-    vec2 force = F_kL + F_cL;
-
-    return force / m;
+    return (F_kL + F_cL) / m;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +56,7 @@ void main()
     vec2 near_vel = texture(vel, tex_coord).xy;
 
     vec2 total_accel = vec2(0.0f);
+    vec2 total_angle = vec2(0.0f);
 
     // Iterate over the nine neighboring cells, accumulating forces.
     for (int dx=-1; dx <= 1; ++dx) {
@@ -81,6 +80,11 @@ void main()
                 // Find the nominal offset and angle between the points.
                 vec2 delta = vec2(float(dx), float(dy));
 
+                // Accumulate angle between desired and actual positions.
+                float angle = atan(far_pos.y - near_pos.y,
+                                   far_pos.x - near_pos.x) - atan(dy, dx);
+                total_angle += vec2(cos(angle), sin(angle));
+
                 total_accel += accel(near_pos, near_vel, delta,
                                      far_pos, far_vel);
             }
@@ -93,7 +97,8 @@ void main()
         (type == 3.0f/255 &&  rightEnginesOn != 0) ||
         (type == 4.0f/255 &&   leftEnginesOn != 0))
     {
-        total_accel += vec2(0.0f, 1000.0f);
+        float angle = atan(total_angle.y, total_angle.x);
+        total_accel += vec2(-sin(angle), cos(angle))*1000.0f;
     }
 
     if (pinned != 0 && tex_coord.x > 0.4f && tex_coord.x < 0.6f &&
