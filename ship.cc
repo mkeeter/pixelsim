@@ -16,7 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 Ship::Ship(const std::string& imagename)
-    : boost(false)
+    : thrustEnginesOn(false), leftEnginesOn(false), rightEnginesOn(false)
 {
     LoadImage(imagename);
     MakeTextures();
@@ -80,7 +80,15 @@ void Ship::GetAcceleration(const int source, const int accel_out)
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
 
-    glUniform1i(glGetUniformLocation(program, "boost"), boost);
+    glUniform1i(glGetUniformLocation(program, "thrustEnginesOn"),
+            thrustEnginesOn);
+    glUniform1i(glGetUniformLocation(program, "leftEnginesOn"),
+            leftEnginesOn || (thrustEnginesOn && !rightEnginesOn));
+    glUniform1i(glGetUniformLocation(program, "rightEnginesOn"),
+            rightEnginesOn || (thrustEnginesOn && !leftEnginesOn));
+
+
+    glUniform1i(glGetUniformLocation(program, "pinned"), 0);
 
     RenderToFBO(program, dvel_tex[accel_out]);
 }
@@ -295,9 +303,6 @@ void Ship::Draw(const int window_width, const int window_height) const
     glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
     glUniform1i(glGetUniformLocation(program, "pos"), 0);
 
-    // Pass in boost info to let us know if we should be drawing engine pixels.
-    glUniform1i(glGetUniformLocation(program, "boost"), boost);
-
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
 }
 
@@ -450,13 +455,20 @@ void Ship::MakeTextures()
             for (size_t x=0; x < width; ++x) {
                 // Get the pixel's address in the data array:
                 uint8_t* const pixel = &data[4*(width*(height-1-y) + x)];
+                const uint8_t r = pixel[0];
+                const uint8_t g = pixel[1];
+                const uint8_t b = pixel[2];
+                const uint8_t a = pixel[3];
 
-                // Any pixel with an alpha value > 0 is filled.
-                const bool pixel_filled = pixel[3] != 0;
-
-                // Only pixels that are pure red count as engines.
-                const bool pixel_engine = filled && pixel[0] == 255 &&
-                                          pixel[1] == 0  && pixel[2] == 0;
+                // Pure red nodes are thruster engines
+                // Red with 1 bit of blue are leftward engines
+                // Red with 2 bits of blue are rightward engines
+                GLubyte type;
+                if      (r == 255 && g == 0 && b == 0 && a)     type = THRUST;
+                else if (r == 255 && g == 0 && b == 1 && a)     type = LEFT;
+                else if (r == 255 && g == 0 && b == 2 && a)     type = RIGHT;
+                else if (a)                                     type = SHIP;
+                else                                            type = EMPTY;
 
                 const size_t indices[] = {
                         y*(width+1) + x, (y+1)*(width+1) + x,
@@ -464,15 +476,18 @@ void Ship::MakeTextures()
 
 
                 for (size_t i : indices) {
-                    if (!filled[i]) {
-                        if (pixel_engine)       filled[i] = 255;
-                        else if (pixel_filled)  filled[i] = 128;
-                    } else if (filled[i] == 255 && pixel_filled && !pixel_engine) {
-                        filled[i] = 128;
+                    if (filled[i] == EMPTY)
+                    {
+                        filled[i] = type;
+                    }
+                    else if (type != EMPTY && filled[i] != type)
+                    {
+                        filled[i] = SHIP;
                     }
                 }
             }
         }
+
         glGenTextures(1, &filled_tex);
         glBindTexture(GL_TEXTURE_2D, filled_tex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width+1, height+1,

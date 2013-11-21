@@ -11,12 +11,15 @@ public:
     Ship(const std::string& imagename);
     ~Ship();
 
-    void BoostOn()  { boost = true; }
-    void BoostOff() { boost = false; }
+    bool thrustEnginesOn;
+    bool leftEnginesOn;
+    bool rightEnginesOn;
 
     void Update(const float dt=0.1, const int steps=5);
     void Draw(const int window_width, const int window_height) const;
 private:
+    enum NodeType {EMPTY, SHIP, THRUST, LEFT, RIGHT};
+
     void MakeBuffers();
     void LoadImage(const std::string& imagename);
     void MakeTextures();
@@ -81,8 +84,6 @@ private:
 
     // Vertex array object
     GLuint vao;
-
-    bool boost;
 };
 
 #endif

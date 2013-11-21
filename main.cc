@@ -44,8 +44,18 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         glfwSetWindowShouldClose(window, GL_TRUE);
     if (key == GLFW_KEY_UP)
     {
-        if (action == GLFW_PRESS)           ship->BoostOn();
-        else if (action == GLFW_RELEASE)    ship->BoostOff();
+        if (action == GLFW_PRESS)           ship->thrustEnginesOn = true;
+        else if (action == GLFW_RELEASE)    ship->thrustEnginesOn = false;
+    }
+    else if (key == GLFW_KEY_LEFT)
+    {
+        if (action == GLFW_PRESS)           ship->leftEnginesOn = true;
+        else if (action == GLFW_RELEASE)    ship->leftEnginesOn = false;
+    }
+    else if (key == GLFW_KEY_RIGHT)
+    {
+        if (action == GLFW_PRESS)           ship->rightEnginesOn = true;
+        else if (action == GLFW_RELEASE)    ship->rightEnginesOn = false;
     }
 }
 

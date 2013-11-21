@@ -14,7 +14,11 @@ uniform float c;     // linear damping
 uniform float m;    // point's mass
 uniform float I;    // point's inertia
 
-uniform int boost;
+uniform int thrustEnginesOn;
+uniform int leftEnginesOn;
+uniform int rightEnginesOn;
+
+uniform int pinned;
 
 out vec4 fragColor;
 
@@ -84,10 +88,21 @@ void main()
     }
 
     // Accelerate engine pixels upwards
-    if (boost != 0 && texture(filled, tex_coord).r == 1.0f)
+    float type = texture(filled, tex_coord).r;
+    if ((type == 2.0f/255 && thrustEnginesOn != 0) ||
+        (type == 3.0f/255 &&  rightEnginesOn != 0) ||
+        (type == 4.0f/255 &&   leftEnginesOn != 0))
     {
         total_accel += vec2(0.0f, 1000.0f);
     }
 
-    fragColor = vec4(total_accel, 0.0f, 1.0f);
+    if (pinned != 0 && tex_coord.x > 0.4f && tex_coord.x < 0.6f &&
+                       tex_coord.y > 0.4f && tex_coord.y < 0.6f)
+    {
+        fragColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    }
+    else
+    {
+        fragColor = vec4(total_accel, 0.0f, 1.0f);
+    }
 }
