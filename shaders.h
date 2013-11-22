@@ -9,10 +9,8 @@ public:
     static void init();
 
     static GLuint ship;
-    static GLuint acceleration;
-    static GLuint velocity;
-    static GLuint position;
-    static GLuint copy;
+    static GLuint derivatives;
+    static GLuint euler;
     static GLuint RK4sum;
 private:
     static GLuint CompileShader(const std::string& filename);

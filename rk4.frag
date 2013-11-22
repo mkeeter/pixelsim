@@ -17,10 +17,7 @@ void main()
     vec2 tex_coord = vec2(gl_FragCoord.x / float(size.x + 1),
                           gl_FragCoord.y / float(size.y + 1));
 
-    fragColor = vec4(
-            texture(y, tex_coord).xyz + dt/6.0f * (
-                texture(k1, tex_coord).xyz +
-                2*texture(k2, tex_coord).xyz +
-                2*texture(k3, tex_coord).xyz +
-                texture(k4, tex_coord).xyz), 0.0f);
+    fragColor = texture(y, tex_coord) + dt/6.0f *
+        (texture(k1, tex_coord) + 2*texture(k2, tex_coord) +
+         2*texture(k3, tex_coord) + texture(k4, tex_coord));
 }

@@ -1,7 +1,7 @@
 #version 330
 
-uniform sampler2D pos;
-uniform sampler2D vel;
+uniform sampler2D state;
+uniform sampler2D accel;
 
 uniform float dt;
 uniform ivec2 size;
@@ -13,7 +13,5 @@ void main()
     vec2 tex_coord = vec2(gl_FragCoord.x / float(size.x + 1),
                           gl_FragCoord.y / float(size.y + 1));
 
-    fragColor = vec4(
-            texture(pos, tex_coord).xyz +
-            texture(vel, tex_coord).xyz * dt, 0);
+    fragColor = texture(state, tex_coord) + texture(accel, tex_coord) * dt;
 }

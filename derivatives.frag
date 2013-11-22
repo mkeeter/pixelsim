@@ -2,9 +2,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uniform sampler2D pos;
-uniform sampler2D vel;
 uniform sampler2D filled;
+uniform sampler2D state;
 
 uniform ivec2 ship_size;
 
@@ -52,8 +51,9 @@ void main()
         return;
     }
 
-    vec2 near_pos = texture(pos, tex_coord).xy;
-    vec2 near_vel = texture(vel, tex_coord).xy;
+    vec4 near_state = texture(state, tex_coord);
+    vec2 near_pos = near_state.rg;
+    vec2 near_vel = near_state.ba;
 
     vec2 total_accel = vec2(0.0f);
     vec2 total_angle = vec2(0.0f);
@@ -74,8 +74,9 @@ void main()
                 texture(filled, far_tex_coord).r != 0)
             {
                 // Get the actual state of the far point from the textures
-                vec2 far_pos = texture(pos, far_tex_coord).xy;
-                vec2 far_vel = texture(vel, far_tex_coord).xy;
+                vec4 far_state = texture(state, far_tex_coord);
+                vec2 far_pos = far_state.rg;
+                vec2 far_vel = far_state.ba;
 
                 // Find the nominal offset and angle between the points.
                 vec2 delta = vec2(float(dx), float(dy));
@@ -85,6 +86,7 @@ void main()
                                    far_pos.x - near_pos.x) - atan(dy, dx);
                 total_angle += vec2(cos(angle), sin(angle));
 
+                // Find the acceleration caused by this node-neighbor linkage
                 total_accel += accel(near_pos, near_vel, delta,
                                      far_pos, far_vel);
             }
@@ -101,13 +103,13 @@ void main()
         total_accel += vec2(-sin(angle), cos(angle))*1000.0f;
     }
 
+    // No acceleration if we're pinned in the center of the ship.
     if (pinned != 0 && tex_coord.x > 0.4f && tex_coord.x < 0.6f &&
                        tex_coord.y > 0.4f && tex_coord.y < 0.6f)
     {
-        fragColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        total_accel = vec2(0.0f);
     }
-    else
-    {
-        fragColor = vec4(total_accel, 0.0f, 1.0f);
-    }
+
+    // Output the final derivatives:
+    fragColor = vec4(near_vel, total_accel);
 }

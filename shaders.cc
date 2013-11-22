@@ -6,28 +6,22 @@
 #include "shaders.h"
 
 GLuint Shaders::ship = 0;
-GLuint Shaders::acceleration = 0;
-GLuint Shaders::position = 0;
-GLuint Shaders::velocity = 0;
-GLuint Shaders::copy = 0;
+GLuint Shaders::derivatives = 0;
+GLuint Shaders::euler = 0;
 GLuint Shaders::RK4sum = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Shaders::init()
 {
-    ship = CreateProgram(CompileShader("ship.vert"),
-                         CompileShader("ship.frag"));
-    acceleration = CreateProgram(CompileShader("texture.vert"),
-                         CompileShader("acceleration.frag"));
-    position = CreateProgram(CompileShader("texture.vert"),
-                         CompileShader("position.frag"));
-    velocity = CreateProgram(CompileShader("texture.vert"),
-                         CompileShader("velocity.frag"));
-    copy = CreateProgram(CompileShader("texture.vert"),
-                         CompileShader("copy.frag"));
-    RK4sum = CreateProgram(CompileShader("texture.vert"),
-                         CompileShader("rk4.frag"));
+    ship        = CreateProgram(CompileShader("ship.vert"),
+                                CompileShader("ship.frag"));
+    derivatives = CreateProgram(CompileShader("texture.vert"),
+                                CompileShader("derivatives.frag"));
+    euler       = CreateProgram(CompileShader("texture.vert"),
+                                CompileShader("euler.frag"));
+    RK4sum      = CreateProgram(CompileShader("texture.vert"),
+                                CompileShader("rk4.frag"));
 }
 
 GLuint Shaders::CompileShader(const std::string& filename)

@@ -35,9 +35,9 @@ Ship::~Ship()
     glDeleteBuffers(1, &rect_buf);
 
     GLuint* textures[] = {
-        &filled_tex, &pos_tex[0],&pos_tex[1], &vel_tex[0], &vel_tex[1],
-        &dpos_tex[0], &dpos_tex[1], &dpos_tex[2], &dpos_tex[3],
-        &dvel_tex[0], &dvel_tex[1], &dvel_tex[2], &dvel_tex[3]
+        &filled_tex, &state_tex[0], &state_tex[1],
+        &derivative_tex[0], &derivative_tex[2],
+        &derivative_tex[2], &derivative_tex[3]
     };
 
     for (auto t : textures)     glDeleteTextures(1, t);
@@ -50,13 +50,7 @@ Ship::~Ship()
 
 void Ship::GetDerivatives(const int source, const int out)
 {
-    GetAcceleration(source, out);
-    GetVelocity(source, out);
-}
-
-void Ship::GetAcceleration(const int source, const int accel_out)
-{
-    const GLuint program = Shaders::acceleration;
+    const GLuint program = Shaders::derivatives;
     glUseProgram(program);
 
     // Load boolean occupancy texture
@@ -66,11 +60,8 @@ void Ship::GetAcceleration(const int source, const int accel_out)
 
     // Load RGB32F position and velocity textures
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, pos_tex[source]);
-    glUniform1i(glGetUniformLocation(program, "pos"), 1);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, vel_tex[source]);
-    glUniform1i(glGetUniformLocation(program, "vel"), 2);
+    glBindTexture(GL_TEXTURE_2D, state_tex[source]);
+    glUniform1i(glGetUniformLocation(program, "state"), 1);
 
     // Load various uniform values
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
@@ -83,53 +74,30 @@ void Ship::GetAcceleration(const int source, const int accel_out)
     glUniform1i(glGetUniformLocation(program, "thrustEnginesOn"),
             thrustEnginesOn);
     glUniform1i(glGetUniformLocation(program, "leftEnginesOn"),
-            leftEnginesOn || (thrustEnginesOn && !rightEnginesOn));
+            leftEnginesOn || (thrustEnginesOn&& !rightEnginesOn));
     glUniform1i(glGetUniformLocation(program, "rightEnginesOn"),
             rightEnginesOn || (thrustEnginesOn && !leftEnginesOn));
 
-
     glUniform1i(glGetUniformLocation(program, "pinned"), 0);
 
-    RenderToFBO(program, dvel_tex[accel_out]);
+    RenderToFBO(program, derivative_tex[out]);
 }
-
-void Ship::GetVelocity(const int source, const int vel_out)
-{
-    const GLuint program = Shaders::copy;
-    glUseProgram(program);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, vel_tex[source]);
-    glUniform1i(glGetUniformLocation(program, "texture"), 0);
-
-    // Set the texture size
-    glUniform2i(glGetUniformLocation(program, "size"), width, height);
-
-    RenderToFBO(program, dpos_tex[vel_out]);
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Ship::ApplyDerivatives(const float dt, const int source)
 {
-    ApplyAcceleration(dt, source);
-    ApplyVelocity(dt, source);
-}
-
-void Ship::ApplyAcceleration(const float dt, const int source)
-{
-    const GLuint program = Shaders::velocity;
+    const GLuint program = Shaders::euler;
     glUseProgram(program);
 
     // Bind old velocity texture
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, vel_tex[tick]);
-    glUniform1i(glGetUniformLocation(program, "vel"), 0);
+    glBindTexture(GL_TEXTURE_2D, state_tex[tick]);
+    glUniform1i(glGetUniformLocation(program, "state"), 0);
 
     // Bind acceleration texture
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, dvel_tex[source]);
+    glBindTexture(GL_TEXTURE_2D, derivative_tex[source]);
     glUniform1i(glGetUniformLocation(program, "accel"), 1);
 
     // Set time-step value
@@ -138,43 +106,19 @@ void Ship::ApplyAcceleration(const float dt, const int source)
     // Set the texture size
     glUniform2i(glGetUniformLocation(program, "size"), width, height);
 
-    RenderToFBO(program, vel_tex[!tick]);
-}
-
-void Ship::ApplyVelocity(const float dt, const int source)
-{
-    const GLuint program = Shaders::position;
-    glUseProgram(program);
-
-    // Bind old position texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
-    glUniform1i(glGetUniformLocation(program, "pos"), 0);
-
-    // Bind velocity texture
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, dpos_tex[source]);
-    glUniform1i(glGetUniformLocation(program, "vel"), 1);
-
-    // Set time-step value
-    glUniform1f(glGetUniformLocation(program, "dt"), dt);
-
-    // Set the texture size
-    glUniform2i(glGetUniformLocation(program, "size"), width, height);
-
-    RenderToFBO(program, pos_tex[!tick]);
+    RenderToFBO(program, state_tex[!tick]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Ship::PrintTextureValues()
 {
-    float tex[(width+1)*(height+1)*3];
+    float tex[(width+1)*(height+1)*4];
 
-    glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
-    std::cout << "Positions:\n";
-    for (int i=0; i < (width+1)*(height+1)*3; i += 3)
+    glBindTexture(GL_TEXTURE_2D, state_tex[tick]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &tex);
+    std::cout << "State:\n";
+    for (int i=0; i < (width+1)*(height+1)*4; i += 4)
     {
         std::cout << tex[i] << ',' << tex[i+1]  << "    ";
     }
@@ -190,21 +134,26 @@ void Ship::PrintTextureValues()
     }
     std::cout << std::endl;
 
-    glBindTexture(GL_TEXTURE_2D, vel_tex[tick]);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
     std::cout << "Velocities:\n";
-    for (int i=0; i < (width+1)*(height+1)*3; i += 3)
+    for (int i=0; i < (width+1)*(height+1)*4; i += 4)
+    {
+        std::cout << tex[i+2] << ',' << tex[i+3]  << "    ";
+    }
+    std::cout << std::endl;
+
+    GetDerivatives(tick, 0);
+    glBindTexture(GL_TEXTURE_2D, derivative_tex[0]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &tex);
+    std::cout << "Derived velocities:\n";
+    for (int i=0; i < (width+1)*(height+1)*4; i += 4)
     {
         std::cout << tex[i] << ',' << tex[i+1]  << "    ";
     }
     std::cout << std::endl;
-    GetDerivatives(tick, 0);
-    glBindTexture(GL_TEXTURE_2D, dvel_tex[0]);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, &tex);
     std::cout << "Accelerations:\n";
-    for (int i=0; i < (width+1)*(height+1)*3; i += 3)
+    for (int i=0; i < (width+1)*(height+1)*4; i += 4)
     {
-        std::cout << tex[i] << ',' << tex[i+1]  << "    ";
+        std::cout << tex[i+2] << ',' << tex[i+3]  << "    ";
     }
     std::cout << std::endl << std::endl;
 
@@ -238,34 +187,27 @@ void Ship::Update(const float dt, const int steps)
 
 void Ship::GetNextState(const float dt)
 {
-    GetRK4Sum(pos_tex, dpos_tex, dt);
-    GetRK4Sum(vel_tex, dvel_tex, dt);
-    tick = !tick;
-}
-
-void Ship::GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt)
-{
     const GLuint program = Shaders::RK4sum;
     glUseProgram(program);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, state[tick]);
+    glBindTexture(GL_TEXTURE_2D, state_tex[tick]);
     glUniform1i(glGetUniformLocation(program, "y"), 0);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, derivatives[0]);
+    glBindTexture(GL_TEXTURE_2D, derivative_tex[0]);
     glUniform1i(glGetUniformLocation(program, "k1"), 1);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, derivatives[1]);
+    glBindTexture(GL_TEXTURE_2D, derivative_tex[1]);
     glUniform1i(glGetUniformLocation(program, "k2"), 2);
 
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, derivatives[2]);
+    glBindTexture(GL_TEXTURE_2D, derivative_tex[2]);
     glUniform1i(glGetUniformLocation(program, "k3"), 3);
 
     glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, derivatives[3]);
+    glBindTexture(GL_TEXTURE_2D, derivative_tex[3]);
     glUniform1i(glGetUniformLocation(program, "k4"), 4);
 
     glUniform1f(glGetUniformLocation(program, "dt"), dt);
@@ -273,7 +215,9 @@ void Ship::GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt)
     // Set the texture size
     glUniform2i(glGetUniformLocation(program, "size"), width, height);
 
-    RenderToFBO(program, state[!tick]);
+    RenderToFBO(program, state_tex[!tick]);
+
+    tick = !tick;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -300,8 +244,15 @@ void Ship::Draw(const int window_width, const int window_height) const
                 width, height);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, pos_tex[tick]);
+    glBindTexture(GL_TEXTURE_2D, state_tex[tick]);
     glUniform1i(glGetUniformLocation(program, "pos"), 0);
+
+    glUniform1i(glGetUniformLocation(program, "thrustEnginesOn"),
+            thrustEnginesOn);
+    glUniform1i(glGetUniformLocation(program, "leftEnginesOn"),
+            leftEnginesOn || (thrustEnginesOn && !rightEnginesOn));
+    glUniform1i(glGetUniformLocation(program, "rightEnginesOn"),
+            rightEnginesOn || (thrustEnginesOn && !leftEnginesOn));
 
     glDrawArrays(GL_TRIANGLES, 0, pixel_count*2*3);
 }
@@ -497,54 +448,34 @@ void Ship::MakeTextures()
     }
 
 
-    {   // Make a texture that stores position alone, and initialize it with
-        // each pixel centered in the proper position.
+    {   // Make a texture that stores position and velocity, and initialize
+        // it with each pixel centered in the proper position with velocity 0.
 
         // Floats are 4-byte-aligned.
         glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        GLfloat* const pos = new GLfloat[(width+1)*(height+1)*2];
+        GLfloat* const pos = new GLfloat[(width+1)*(height+1)*4];
         size_t i=0;
         for (size_t y=0; y <= height; ++y) {
             for (size_t x=0; x <= width; ++x) {
                 pos[i++] = x;
                 pos[i++] = y;
+                pos[i++] = 0;
+                pos[i++] = 0;
             }
         }
 
-        GLuint* textures[] = {&pos_tex[0], &pos_tex[1]};
+        GLuint* textures[] = {&state_tex[0], &state_tex[1],
+                              &derivative_tex[0], &derivative_tex[1],
+                              &derivative_tex[2], &derivative_tex[3]};
         for (auto t : textures)
         {
             glGenTextures(1, t);
             glBindTexture(GL_TEXTURE_2D, *t);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, width+1, height+1,
-                    0, GL_RG, GL_FLOAT, pos);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width+1, height+1,
+                    0, GL_RGBA, GL_FLOAT, pos);
             SetTextureDefaults();
         }
         delete [] pos;
-    }
-
-    {   // Make a set of float textures storing position, velocity,
-        // and acceleration.
-
-        // Floats are 4-byte-aligned.
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        GLfloat* const empty = new GLfloat[(width+1)*(height+1)*2];
-        for (size_t i=0; i < (width+1)*(height+1)*2; i++)   empty[i] = 0;
-
-        GLuint* textures[] = {&vel_tex[0], &vel_tex[1],
-                              &dvel_tex[0], &dvel_tex[1],
-                              &dvel_tex[2], &dvel_tex[3],
-                              &dpos_tex[0], &dpos_tex[1],
-                              &dpos_tex[2], &dpos_tex[3]};
-
-        for (auto t: textures) {
-            glGenTextures(1, t);
-            glBindTexture(GL_TEXTURE_2D, *t);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, width+1, height+1,
-                    0, GL_RG, GL_FLOAT, empty);
-            SetTextureDefaults();
-        }
-        delete [] empty;
     }
 }
 

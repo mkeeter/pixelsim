@@ -28,29 +28,15 @@ private:
 
     void SetTextureDefaults() const;
 
-    // From pos[source] and vel[source], calculate and store derivatives
+    // Calculate derivatives of state_tex[source], storing them
+    // in derivative_tex[out]
     void GetDerivatives(const int source, const int out);
 
-    // From pos[source] and vel[tick], calculate dvel and store in
-    // dvel[accel_out]
-    void GetAcceleration(const int source, const int accel_out);
-
-    // From vel[source], calculate dpos (hint: it's the same thing)
-    // and store in dpos[vel_out]
-    void GetVelocity(const int source, const int vel_out);
-
-    // Applies derivatives in the given slot, storing new position
-    // and velocity in tock slot.
+    // Applies derivative_tex[source] to state_tex[tick], storing
+    // new state in state_tex[!tick]
     void ApplyDerivatives(const float dt, const int source);
 
-    // Store an updated velocity in vel_tex[tock]
-    void ApplyAcceleration(const float dt, const int source);
-
-    // Store an updated position in pos_tex[tock]
-    void ApplyVelocity(const float dt, const int source);
-
     void GetNextState(const float dt);
-    void GetRK4Sum(GLuint* state, GLuint* derivatives, const float dt);
 
     void RenderToFBO(const GLuint program, const GLuint tex);
 
@@ -71,11 +57,8 @@ private:
     // Textures
     GLuint filled_tex;  // boolean storing occupancy
 
-    GLuint pos_tex[2];     // position & rotation of each pixel
-    GLuint vel_tex[2];     // velocity of each pixel
-
-    GLuint dpos_tex[4];    // derivative of position (buffers for RK4)
-    GLuint dvel_tex[4];    // derivaties of velocity (buffers for RK4)
+    GLuint state_tex[2];   // position & velocity of each pixel
+    GLuint derivative_tex[4]; // derivatives of position and velocity (for RK4)
 
     bool tick;
 
