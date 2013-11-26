@@ -5,6 +5,8 @@
 
 #include "shaders.h"
 
+std::string Shaders::constants;
+
 GLuint Shaders::ship = 0;
 GLuint Shaders::derivatives = 0;
 GLuint Shaders::euler = 0;
@@ -14,6 +16,13 @@ GLuint Shaders::RK4sum = 0;
 
 void Shaders::init()
 {
+    // Load "constants.h" as a string.  We'll paste this string
+    // into all of the shaders (to #define a bunch of macros).
+    std::ifstream c("constants.h");
+    std::string line;
+    std::string program;
+    while (getline(c, line))    constants += line + '\n';
+
     ship        = CreateProgram(CompileShader("ship.vert"),
                                 CompileShader("ship.frag"));
     derivatives = CreateProgram(CompileShader("texture.vert"),
@@ -35,6 +44,13 @@ GLuint Shaders::CompileShader(const std::string& filename)
     std::ifstream t(filename.c_str());
     std::string line;
     std::string program;
+
+    // Get the first line (the #version directive)
+    getline(t, program);
+    // Then add all of the constants defined in constants.h
+    program += '\n' + constants;
+
+    // Finally read the rest of the shader in
     while (getline(t, line))    program += line + '\n';
 
     const char* txt = program.c_str();

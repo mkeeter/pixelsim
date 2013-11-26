@@ -3,7 +3,8 @@
 #include <thread>
 
 #include <GLFW/glfw3.h>
-#include <OpenGL/glext.h>
+
+#include <png.h>
 
 #include "ship.h"
 #include "shaders.h"
@@ -62,7 +63,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 ////////////////////////////////////////////////////////////////////////////////
 
 void GetArgs(int argc, char** argv,
-             std::string* filename, WindowSize* window_size, bool* record)
+             std::string* filename, WindowSize* window_size,
+             bool* record, bool* pinned)
 {
     if (argc < 2)
     {
@@ -129,6 +131,10 @@ void GetArgs(int argc, char** argv,
         {
             *record = true;
         }
+        else if (!strcmp(argv[a], "--pinned"))
+        {
+            *pinned = true;
+        }
         else
         {
             std::cerr << "[pixelsim]    Error: Unrecognized argument '"
@@ -145,8 +151,9 @@ int main(int argc, char** argv)
     WindowSize window_size(640, 480);
 
     bool record = false;
+    bool pinned = false;
     std::string filename;
-    GetArgs(argc, argv, &filename, &window_size, &record);
+    GetArgs(argc, argv, &filename, &window_size, &record, &pinned);
 
     // Initialize the library
     if (!glfwInit())    return -1;
@@ -172,7 +179,7 @@ int main(int argc, char** argv)
     glfwMakeContextCurrent(window);
 
     // Initialize the ship!
-    Ship ship(filename);
+    Ship ship(filename, pinned);
     Shaders::init();
 
     // Store pointers to window and ship objects.  They will be
@@ -197,7 +204,7 @@ int main(int argc, char** argv)
         const auto t0 = std::chrono::high_resolution_clock::now();
 
         // Update the ship
-        ship.Update(1.0e0/60, 25);
+        ship.Update(1.0e0/60, 50);
 
         // Draw the scene
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);

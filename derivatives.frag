@@ -95,9 +95,9 @@ void main()
 
     // Accelerate engine pixels upwards
     float type = texture(filled, tex_coord).r;
-    if ((type == 2.0f/255 && thrustEnginesOn != 0) ||
-        (type == 3.0f/255 &&  rightEnginesOn != 0) ||
-        (type == 4.0f/255 &&   leftEnginesOn != 0))
+    if ((type == SHIP_ENGINE_THRUST/255.0f && thrustEnginesOn != 0) ||
+        (type == SHIP_ENGINE_RIGHT/255.0f &&  rightEnginesOn != 0) ||
+        (type == SHIP_ENGINE_LEFT/255.0f &&   leftEnginesOn != 0))
     {
         float angle = atan(total_angle.y, total_angle.x);
         total_accel += vec2(-sin(angle), cos(angle))*1000.0f;

@@ -31,5 +31,5 @@ void main()
         centered.x *= float(window_size.y) / float(window_size.x);
     }
 
-    gl_Position = vec4(centered*0.2, 0.0, 1.0);
+    gl_Position = vec4(centered*0.8, 0.0, 1.0);
 }

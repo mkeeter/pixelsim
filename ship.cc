@@ -15,8 +15,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Ship::Ship(const std::string& imagename)
-    : thrustEnginesOn(false), leftEnginesOn(false), rightEnginesOn(false)
+Ship::Ship(const std::string& imagename, const bool pinned)
+    : thrustEnginesOn(false), leftEnginesOn(false), rightEnginesOn(false),
+      pinned(pinned)
 {
     LoadImage(imagename);
     MakeTextures();
@@ -66,8 +67,8 @@ void Ship::GetDerivatives(const int source, const int out)
     // Load various uniform values
     glUniform2i(glGetUniformLocation(program, "ship_size"), width, height);
 
-    glUniform1f(glGetUniformLocation(program, "k"), 100000.0f);
-    glUniform1f(glGetUniformLocation(program, "c"), 100.0f);
+    glUniform1f(glGetUniformLocation(program, "k"), 10000.0f);
+    glUniform1f(glGetUniformLocation(program, "c"), 1000.0f);
     glUniform1f(glGetUniformLocation(program, "m"), 1.0f);
     glUniform1f(glGetUniformLocation(program, "I"), 1.0f);
 
@@ -78,7 +79,7 @@ void Ship::GetDerivatives(const int source, const int out)
     glUniform1i(glGetUniformLocation(program, "rightEnginesOn"),
             rightEnginesOn || (thrustEnginesOn && !leftEnginesOn));
 
-    glUniform1i(glGetUniformLocation(program, "pinned"), 0);
+    glUniform1i(glGetUniformLocation(program, "pinned"), pinned);
 
     RenderToFBO(program, derivative_tex[out]);
 }
@@ -415,9 +416,15 @@ void Ship::MakeTextures()
                 // Red with 1 bit of blue are leftward engines
                 // Red with 2 bits of blue are rightward engines
                 GLubyte type;
-                if      (r == 255 && g == 0 && b == 0 && a)     type = THRUST;
-                else if (r == 255 && g == 0 && b == 1 && a)     type = LEFT;
-                else if (r == 255 && g == 0 && b == 2 && a)     type = RIGHT;
+                if      (r == SHIP_ENGINE_THRUST_R &&
+                         g == SHIP_ENGINE_THRUST_G &&
+                         b == SHIP_ENGINE_THRUST_B && a)        type = THRUST;
+                else if (r == SHIP_ENGINE_LEFT_R &&
+                         g == SHIP_ENGINE_LEFT_G &&
+                         b == SHIP_ENGINE_LEFT_B && a)          type = LEFT;
+                else if (r == SHIP_ENGINE_RIGHT_R &&
+                         g == SHIP_ENGINE_RIGHT_G &&
+                         b == SHIP_ENGINE_RIGHT_B && a)         type = RIGHT;
                 else if (a)                                     type = SHIP;
                 else                                            type = EMPTY;
 

@@ -5,10 +5,12 @@
 
 #include <string>
 
+#include "constants.h"
+
 class Ship
 {
 public:
-    Ship(const std::string& imagename);
+    Ship(const std::string& imagename, const bool pinned);
     ~Ship();
 
     bool thrustEnginesOn;
@@ -18,7 +20,10 @@ public:
     void Update(const float dt=0.1, const int steps=5);
     void Draw(const int window_width, const int window_height) const;
 private:
-    enum NodeType {EMPTY, SHIP, THRUST, LEFT, RIGHT};
+    enum NodeType {EMPTY=0, SHIP=1,
+                   THRUST=SHIP_ENGINE_THRUST,
+                   LEFT  =SHIP_ENGINE_LEFT,
+                   RIGHT =SHIP_ENGINE_RIGHT};
 
     void MakeBuffers();
     void LoadImage(const std::string& imagename);
@@ -67,6 +72,8 @@ private:
 
     // Vertex array object
     GLuint vao;
+
+    const bool pinned;
 };
 
 #endif
