@@ -1,6 +1,8 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <sstream>
+#include <iomanip>
 
 #include <GLFW/glfw3.h>
 
@@ -58,6 +60,40 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         if (action == GLFW_PRESS)           ship->rightEnginesOn = true;
         else if (action == GLFW_RELEASE)    ship->rightEnginesOn = false;
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void SaveImage(const std::string& filename,
+               const size_t width, const size_t height)
+{
+    png_structp png_ptr = png_create_write_struct(
+            PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+
+    FILE* output = fopen(filename.c_str(), "wb");
+
+    png_set_IHDR(png_ptr, info_ptr, width, height,
+                 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+
+    GLubyte* pixels = new GLubyte[width*height*3];
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+
+    GLubyte** rows = new GLubyte*[height];
+    for (size_t i=0; i < height; ++i)   
+    {
+        rows[i] = &pixels[(height - i - 1)*width*3];
+    }
+
+    png_init_io(png_ptr, output);
+    png_set_rows(png_ptr, info_ptr, rows);
+    png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+
+    fclose(output);
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    delete [] rows;
+    delete [] pixels;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -198,6 +234,7 @@ int main(int argc, char** argv)
     glfwGetFramebufferSize(window, &window_size.width, &window_size.height);
 
     // Loop until the user closes the window
+    size_t frame=0;
     while (!glfwWindowShouldClose(window))
     {
         // Store the start time of this update loop
@@ -226,6 +263,15 @@ int main(int argc, char** argv)
         std::cout << std::chrono::seconds(1) /
                      (std::chrono::high_resolution_clock::now() - t0)
                   << std::endl;
+
+        if (record && frame)
+        {
+            std::stringstream ss;
+            ss << std::setw(3) << std::setfill('0') << frame;
+            SaveImage("frames/" + ss.str() + ".png",
+                      window_size.width, window_size.height);
+        }
+        frame++;
     }
 
     glfwTerminate();

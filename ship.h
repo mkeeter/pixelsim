@@ -19,6 +19,7 @@ public:
 
     void Update(const float dt=0.1, const int steps=5);
     void Draw(const int window_width, const int window_height) const;
+
 private:
     enum NodeType {EMPTY=0, SHIP=1,
                    THRUST=SHIP_ENGINE_THRUST,
