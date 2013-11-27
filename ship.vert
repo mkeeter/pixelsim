@@ -7,6 +7,10 @@ flat out vec4 color_out;
 
 uniform ivec2  window_size;
 uniform ivec2  ship_size;
+
+uniform vec2 offset;
+uniform float scale;
+
 uniform sampler2D pos;
 
 void main()
@@ -17,7 +21,7 @@ void main()
         (vertex_position.x + 1.0f) / float(ship_size.x + 2),
         (vertex_position.y + 1.0f) / float(ship_size.y + 2))).xy;
 
-    vec2 centered = xy - ship_size/2.0f;
+    vec2 centered = xy - offset;
 
     // If the ship is wider than the window, fit the x axis
     if ((ship_size.x*window_size.y) / (ship_size.y*window_size.x) >= 1)
@@ -31,5 +35,5 @@ void main()
         centered.x *= float(window_size.y) / float(window_size.x);
     }
 
-    gl_Position = vec4(centered*0.8, 0.0, 1.0);
+    gl_Position = vec4(centered*scale, 0.0, 1.0);
 }

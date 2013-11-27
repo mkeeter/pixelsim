@@ -15,9 +15,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Ship::Ship(const std::string& imagename, const bool pinned)
-    : thrustEnginesOn(false), leftEnginesOn(false), rightEnginesOn(false),
-      pinned(pinned)
+Ship::Ship(const std::string& imagename)
+    : thrustEnginesOn(false), leftEnginesOn(false), rightEnginesOn(false)
 {
     LoadImage(imagename);
     MakeTextures();
@@ -31,6 +30,8 @@ Ship::Ship(const std::string& imagename, const bool pinned)
 Ship::~Ship()
 {
     delete [] data;
+    delete [] filled;
+
     glDeleteBuffers(1, &vertex_buf);
     glDeleteBuffers(1, &color_buf);
     glDeleteBuffers(1, &rect_buf);
@@ -79,8 +80,6 @@ void Ship::GetDerivatives(const int source, const int out)
     glUniform1i(glGetUniformLocation(program, "rightEnginesOn"),
             rightEnginesOn || (thrustEnginesOn && !leftEnginesOn));
 
-    glUniform1i(glGetUniformLocation(program, "pinned"), pinned);
-
     RenderToFBO(program, derivative_tex[out]);
 }
 
@@ -112,6 +111,41 @@ void Ship::ApplyDerivatives(const float dt, const int source)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void Ship::FindPosition()
+{
+    float state[(width+1)*(height+1)*4];
+    glBindTexture(GL_TEXTURE_2D, state_tex[tick]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &state);
+
+    centroid[0] = 0;
+    centroid[1] = 0;
+    velocity[0] = 0;
+    velocity[1] = 0;
+    size_t count = 0;
+
+    for (size_t j=0; j <= height; ++j)
+    {
+        for (size_t i=0; i <= width; ++i)
+        {
+            if (filled[i + j*(width+1)])
+            {
+                centroid[0] += state[4*(i + j*(width+1))];
+                centroid[1] += state[4*(i + j*(width+1)) + 1];
+                velocity[0] += state[4*(i + j*(width+1)) + 2];
+                velocity[1] += state[4*(i + j*(width+1)) + 3];
+                count++;
+            }
+        }
+    }
+
+    centroid[0] /= float(count);
+    centroid[1] /= float(count);
+    velocity[0] /= float(count);
+    velocity[1] /= float(count);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void Ship::PrintTextureValues()
 {
     float tex[(width+1)*(height+1)*4];
@@ -122,16 +156,6 @@ void Ship::PrintTextureValues()
     for (int i=0; i < (width+1)*(height+1)*4; i += 4)
     {
         std::cout << tex[i] << ',' << tex[i+1]  << "    ";
-    }
-    std::cout << std::endl;
-
-    GLubyte filled[(width+1)*(height+1)*3];
-    glBindTexture(GL_TEXTURE_2D, filled_tex);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, &filled);
-    std::cout << "Filled:\n";
-    for (int i=0; i < (width+1)*(height+1); i++)
-    {
-        std::cout << int(filled[i]) << "    ";
     }
     std::cout << std::endl;
 
@@ -182,6 +206,9 @@ void Ship::Update(const float dt, const int steps)
         // Update state and swap which texture is active
         GetNextState(dt_);
     }
+
+    // Update centroid and velocity arrays.
+    FindPosition();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -223,7 +250,8 @@ void Ship::GetNextState(const float dt)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Ship::Draw(const int window_width, const int window_height) const
+void Ship::Draw(const int window_width, const int window_height,
+                const bool track, const float scale) const
 {
     glViewport(0, 0, window_width, window_height);
 
@@ -240,9 +268,21 @@ void Ship::Draw(const int window_width, const int window_height) const
 
     glUniform2i(glGetUniformLocation(program, "window_size"),
                 window_width, window_height);
-
     glUniform2i(glGetUniformLocation(program, "ship_size"),
                 width, height);
+
+    if (track)
+    {
+        glUniform2f(glGetUniformLocation(program, "offset"),
+                    centroid[0], centroid[1]);
+    }
+    else
+    {
+        glUniform2f(glGetUniformLocation(program, "offset"),
+                    width/2.0f, height/2.0f);
+    }
+
+    glUniform1f(glGetUniformLocation(program, "scale"), scale);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, state_tex[tick]);
@@ -285,8 +325,7 @@ void Ship::RenderToFBO(const GLuint program, const GLuint tex)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Minimal function to load a .png image.
-// Does no error checking: assumes that the file exists and
-// is an eight-bit RGBA png image.
+// Assumes that the file exists and does minimal error checking.
 void Ship::LoadImage(const std::string& imagename)
 {
     png_structp png_ptr = png_create_read_struct(
@@ -400,7 +439,7 @@ void Ship::MakeTextures()
     {   // Load a byte-map recording occupancy
         // Bytes are byte-aligned, so set unpack alignment to 1
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        GLubyte* const filled = new GLubyte[(width+1)*(height+1)];
+        filled = new GLubyte[(width+1)*(height+1)];
         memset(filled, 0, sizeof(GLubyte)*(width+1)*(height+1));
 
         for (size_t y=0; y < height; ++y) {
@@ -451,7 +490,6 @@ void Ship::MakeTextures()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width+1, height+1,
                      0, GL_RED, GL_UNSIGNED_BYTE, filled);
         SetTextureDefaults();
-        delete [] filled;
     }
 
 

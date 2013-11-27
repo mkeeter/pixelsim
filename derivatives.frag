@@ -17,8 +17,6 @@ uniform int thrustEnginesOn;
 uniform int leftEnginesOn;
 uniform int rightEnginesOn;
 
-uniform int pinned;
-
 out vec4 fragColor;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,13 +99,6 @@ void main()
     {
         float angle = atan(total_angle.y, total_angle.x);
         total_accel += vec2(-sin(angle), cos(angle))*1000.0f;
-    }
-
-    // No acceleration if we're pinned in the center of the ship.
-    if (pinned != 0 && tex_coord.x > 0.4f && tex_coord.x < 0.6f &&
-                       tex_coord.y > 0.4f && tex_coord.y < 0.6f)
-    {
-        total_accel = vec2(0.0f);
     }
 
     // Output the final derivatives:

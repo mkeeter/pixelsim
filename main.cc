@@ -81,7 +81,7 @@ void SaveImage(const std::string& filename,
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
     GLubyte** rows = new GLubyte*[height];
-    for (size_t i=0; i < height; ++i)   
+    for (size_t i=0; i < height; ++i)
     {
         rows[i] = &pixels[(height - i - 1)*width*3];
     }
@@ -100,7 +100,7 @@ void SaveImage(const std::string& filename,
 
 void GetArgs(int argc, char** argv,
              std::string* filename, WindowSize* window_size,
-             bool* record, bool* pinned)
+             bool* record, bool* track, float* scale)
 {
     if (argc < 2)
     {
@@ -163,13 +163,29 @@ void GetArgs(int argc, char** argv,
                 exit(-1);
             }
         }
+        else if (!strcmp(argv[a], "--scale"))
+        {
+            if (++a >= argc)
+            {
+                std::cerr << "[pixelsim]    Error: No scale provided!"
+                          << std::endl;
+                exit(-1);
+            }
+            *scale = std::atof(argv[a]);
+            if (*scale == 0)
+            {
+                std::cerr << "[pixelsim]    Error: Invalid scale specification '"
+                          << argv[a] << "'" << std::endl;
+                exit(-1);
+            }
+        }
         else if (!strcmp(argv[a], "--record"))
         {
             *record = true;
         }
-        else if (!strcmp(argv[a], "--pinned"))
+        else if (!strcmp(argv[a], "--track"))
         {
-            *pinned = true;
+            *track = true;
         }
         else
         {
@@ -187,14 +203,15 @@ int main(int argc, char** argv)
     WindowSize window_size(640, 480);
 
     bool record = false;
-    bool pinned = false;
+    bool track  = false;
+    float scale = 0.9;
     std::string filename;
-    GetArgs(argc, argv, &filename, &window_size, &record, &pinned);
+    GetArgs(argc, argv, &filename, &window_size, &record, &track, &scale);
 
     // Initialize the library
     if (!glfwInit())    return -1;
 
-    glfwWindowHint(GLFW_SAMPLES, 0);    // multisampling!
+    glfwWindowHint(GLFW_SAMPLES, 8);    // multisampling!
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -215,7 +232,7 @@ int main(int argc, char** argv)
     glfwMakeContextCurrent(window);
 
     // Initialize the ship!
-    Ship ship(filename, pinned);
+    Ship ship(filename);
     Shaders::init();
 
     // Store pointers to window and ship objects.  They will be
@@ -246,7 +263,7 @@ int main(int argc, char** argv)
         // Draw the scene
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        ship.Draw(window_size.width, window_size.height);
+        ship.Draw(window_size.width, window_size.height, track, scale);
 
         // Swap front and back buffers
         glfwSwapBuffers(window);
