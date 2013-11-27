@@ -96,6 +96,19 @@ void SaveImage(const std::string& filename,
     delete [] pixels;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+
+void PrintUsage()
+{
+    std::cout << "Usage: pixelsim [...] filename.png\n\n"
+        << "Arguments:\n"
+        << "    --size WxH    Render window size (default: 640x480)\n"
+        << "    --scale f     Ship render scale  (default: 0.9)\n"
+        << "    --record      Save frames as frames/FRAMENUMBER.png\n"
+        << "    --track       Center ship's centroid in the window\n";
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void GetArgs(int argc, char** argv,
@@ -104,7 +117,7 @@ void GetArgs(int argc, char** argv,
 {
     if (argc < 2)
     {
-        std::cout << "Usage: pixelsim [...] image.png" << std::endl;
+        PrintUsage();
         exit(-1);
     }
 
