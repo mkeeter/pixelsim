@@ -275,6 +275,8 @@ int main(int argc, char** argv)
 
         // Draw the scene
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.933f, 0.933f, 0.933f, 1.0f);
+
         glClear(GL_COLOR_BUFFER_BIT);
         ship.Draw(window_size.width, window_size.height, track, scale);
 
