@@ -20,7 +20,7 @@ void main()
          color_out.g == SHIP_ENGINE_RIGHT_G/255.0f &&
          color_out.b == SHIP_ENGINE_RIGHT_B/255.0f && rightEnginesOn == 0))
     {
-        fragColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        discard;
     }
     else
     {
